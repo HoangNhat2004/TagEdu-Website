@@ -10,24 +10,28 @@ export default function NavBar() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const navigate = useNavigate(); 
   const location = useLocation(); 
 
-  // [ĐÃ SỬA] Thêm bộ lắng nghe thay đổi LocalStorage từ các Tab khác
-  useEffect(() => {
-    // 1. Kiểm tra lúc mới load trang
-    const userStr = localStorage.getItem("tagedu_user");
-    if (userStr) {
-      setCurrentUser(JSON.parse(userStr));
-    }
+  const isHomePage = location.pathname === "/";
 
-    // 2. Lắng nghe sự kiện storage (khi có tab khác xóa token)
+  useEffect(() => {
+    if (!isHomePage) return;
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isHomePage]);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem("tagedu_user");
+    if (userStr) setCurrentUser(JSON.parse(userStr));
+
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "tagedu_token" && !e.newValue) {
-        // Nếu token bị xóa ở tab khác -> tự động đăng xuất ở tab này
         setCurrentUser(null);
-        window.dispatchEvent(new Event("auth_change")); // Báo cho Chatbot biết luôn
+        window.dispatchEvent(new Event("auth_change"));
       }
     };
 
@@ -42,23 +46,33 @@ export default function NavBar() {
     window.location.href = "/"; 
   };
 
+  const isTransparent = isHomePage && !isScrolled;
+
   return (
     <>
-      <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <nav
+        className={`sticky top-0 z-50 w-full border-b transition-all duration-300 ${
+          isTransparent
+            ? "bg-black/30 backdrop-blur-sm border-white/10"
+            : "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-border"
+        }`}
+      >
         <div className="container flex h-16 items-center justify-between px-4 md:px-8">
           
           <div className="flex items-center gap-2">
             <button onClick={() => navigate("/")} className="flex items-center gap-2">
-              <GraduationCap className="h-8 w-8 text-primary" />
-              <span className="text-xl font-bold tracking-tight text-primary">TagEdu</span>
+              <GraduationCap className={`h-8 w-8 ${isTransparent ? "text-white" : "text-primary"}`} />
+              <span className={`text-xl font-bold tracking-tight ${isTransparent ? "text-white" : "text-primary"}`}>
+                TagEdu
+              </span>
             </button>
           </div>
 
           <div className="flex items-center gap-4">
             {currentUser ? (
-              <div className="flex items-center gap-2 sm:gap-3 border-r pr-4 mr-2 border-border/50">
-                <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-muted-foreground mr-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <div className={`flex items-center gap-2 sm:gap-3 border-r pr-4 mr-2 ${isTransparent ? "border-white/20" : "border-border/50"}`}>
+                <div className={`hidden sm:flex items-center gap-2 text-sm font-medium mr-2 ${isTransparent ? "text-white/90" : "text-muted-foreground"}`}>
+                  <div className={`flex h-7 w-7 items-center justify-center rounded-full ${isTransparent ? "bg-white/20 text-white" : "bg-primary/10 text-primary"}`}>
                     <User className="h-4 w-4" />
                   </div>
                   <span className="max-w-[200px] truncate" title={currentUser.fullName}>
@@ -70,7 +84,7 @@ export default function NavBar() {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="text-red-600 hover:bg-red-50 h-8 px-2"
+                    className={`h-8 px-2 ${isTransparent ? "text-red-300 hover:bg-white/10 hover:text-red-200" : "text-red-600 hover:bg-red-50"}`}
                     onClick={() => navigate("/admin")}
                     title="Trang quản trị viên"
                   >
@@ -82,7 +96,7 @@ export default function NavBar() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="text-gray-600 hover:bg-gray-100 h-8 px-2"
+                  className={`h-8 px-2 ${isTransparent ? "text-white/90 hover:bg-white/10 hover:text-white" : "text-gray-600 hover:bg-gray-100"}`}
                   onClick={() => setIsProfileModalOpen(true)}
                   title="Chỉnh sửa hồ sơ"
                 >
@@ -93,7 +107,7 @@ export default function NavBar() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="text-red-500 hover:bg-red-50 hover:text-red-600 h-8 px-2"
+                  className={`h-8 px-2 ${isTransparent ? "text-red-300 hover:bg-white/10 hover:text-red-200" : "text-red-500 hover:bg-red-50 hover:text-red-600"}`}
                   onClick={() => setIsLogoutModalOpen(true)}
                   title="Đăng xuất"
                 >
@@ -102,12 +116,12 @@ export default function NavBar() {
                 </Button>
               </div>
             ) : (
-              <div className="border-r pr-4 mr-2 border-border/50">
+              <div className={`border-r pr-4 mr-2 ${isTransparent ? "border-white/20" : "border-border/50"}`}>
                 <Button 
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="gap-2 h-8"
+                  className={`gap-2 h-8 ${isTransparent ? "text-white/90 hover:bg-white/10 hover:text-white" : ""}`}
                 >
                   <LogIn className="h-4 w-4" />
                   <span className="hidden sm:inline">Đăng nhập</span>
@@ -115,8 +129,11 @@ export default function NavBar() {
               </div>
             )}
 
-            {location.pathname === "/" ? (
-              <Button asChild>
+            {isHomePage ? (
+              <Button
+                asChild
+                className={isTransparent ? "bg-white text-blue-900 hover:bg-white/90 border-0 font-semibold" : ""}
+              >
                 <a href="#challenges">Bắt đầu ngay</a>
               </Button>
             ) : (
