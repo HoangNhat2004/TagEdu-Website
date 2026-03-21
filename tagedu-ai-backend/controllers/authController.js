@@ -6,13 +6,22 @@ const nodemailer = require('nodemailer');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+// --- SỬA Ở ĐÂY ---
+// Thêm thuộc tính host, port, secure và tls để ép dùng IPv4
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // sử dụng SSL
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
+  },
+  tls: {
+    // Không reject những kết nối không có chứng chỉ (tuỳ chọn)
+    rejectUnauthorized: false
   }
 });
+// -----------------
 
 exports.register = async (req, res) => {
   const { fullName, email, password } = req.body;

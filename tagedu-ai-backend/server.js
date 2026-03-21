@@ -10,6 +10,11 @@ const userRoutes = require('./routes/userRoutes'); // [THÊM MỚI] Import route
 
 const app = express();
 
+// --- SỬA Ở ĐÂY ---
+// Cấu hình Express tin tưởng proxy (cần thiết khi deploy trên Render/Vercel)
+app.set('trust proxy', 1); 
+// -----------------
+
 app.use(cors());
 app.use(express.json());
 
