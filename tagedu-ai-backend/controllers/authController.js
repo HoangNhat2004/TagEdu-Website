@@ -7,18 +7,27 @@ const nodemailer = require('nodemailer');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // --- SỬA Ở ĐÂY ---
-// Chuyển sang dùng cổng 587 với STARTTLS để vượt tường lửa Render
+// Giải quyết triệt để lỗi IPv6 trên Render bằng "family: 4"
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
-  secure: false, // false cho port 587, true cho 465
+  secure: false, // Dùng STARTTLS
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
   tls: {
     rejectUnauthorized: false
-  }
+  },
+  // THÊM DÒNG NÀY: Ép Node.js chỉ dùng IPv4, bỏ qua IPv6
+  connectionTimeout: 10000, // Thêm timeout cho chắc chắn
+  socketTimeout: 15000,
+  tls: { ciphers: 'SSLv3' },
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, 
+  // BIỆN PHÁP CUỐI CÙNG CHO RENDER: Ép dùng IPv4
+  family: 4 
 });
 // -----------------
 
@@ -36,7 +45,6 @@ exports.register = async (req, res) => {
       [fullName, email, passwordHash]
     );
 
-    // [ĐÃ SỬA] Trả về object user có chứa role thay vì chỉ trả về userId
     res.status(201).json({ message: 'Đăng ký tài khoản thành công!', user: { id: result.insertId, fullName: fullName, email: email, role: 'user' } });
   } catch (error) {
     res.status(500).json({ error: 'Lỗi hệ thống khi đăng ký.' });
@@ -57,7 +65,6 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '24h' });
 
-    // [ĐÃ SỬA] Trả về thêm trường role khi đăng nhập thành công
     res.json({ message: 'Đăng nhập thành công!', token, user: { id: user.id, fullName: user.full_name, email: user.email, profileBio: user.profile_bio, role: user.role } });
   } catch (error) {
     res.status(500).json({ error: 'Lỗi hệ thống khi đăng nhập.' });
@@ -83,14 +90,12 @@ exports.googleLogin = async (req, res) => {
         'INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)',
         [name, email, passwordHash]
       );
-      // [ĐÃ SỬA] Thêm role mặc định là 'user' khi tạo mới
       user = { id: result.insertId, full_name: name, email: email, profile_bio: null, role: 'user' }; 
     } else {
       user = users[0];
     }
 
     const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '24h' });
-    // [ĐÃ SỬA] Trả về thêm trường role khi đăng nhập bằng Google
     res.json({ message: 'Đăng nhập Google thành công!', token, user: { id: user.id, fullName: user.full_name, email: user.email, profileBio: user.profile_bio, role: user.role } });
   } catch (error) {
     res.status(500).json({ error: 'Xác thực Google thất bại.' });
@@ -159,18 +164,15 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// [ĐÃ SỬA] Hàm Cập nhật Profile
 exports.updateProfile = async (req, res) => {
   const userId = req.user.userId; 
-  const { fullName, profileBio } = req.body; // Lấy thêm profileBio từ body
+  const { fullName, profileBio } = req.body; 
 
   if (!fullName) return res.status(400).json({ error: 'Tên hiển thị không được để trống!' });
 
   try {
-    // Cập nhật cả tên và bio vào Database
     await db.promise().query('UPDATE users SET full_name = ?, profile_bio = ? WHERE id = ?', [fullName, profileBio, userId]);
 
-    // [ĐÃ SỬA] Lấy lại thông tin user mới nhất bao gồm cả bio VÀ role
     const [users] = await db.promise().query('SELECT id, full_name, email, profile_bio, role FROM users WHERE id = ?', [userId]);
 
     res.json({ 
