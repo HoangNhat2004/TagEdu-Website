@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Check, Monitor, Cpu, ShieldCheck, Database, Globe, FileText, Music, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -36,17 +36,21 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
   const [placed, setPlaced] = useState<Record<string, string>>({});
   const [shakeId, setShakeId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [highlightedCat, setHighlightedCat] = useState<string | null>(null);
+
+  // Refs để dùng trong native event listeners (tránh stale closure)
+  const activeTouchItemId = useRef<string | null>(null);
+  const dragCloneRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const unplaced = ALL_ITEMS.filter((item) => !placed[item.id]);
   const isComplete = Object.keys(placed).length === ALL_ITEMS.length;
 
-  // Tự động gọi API lưu tiến độ khi isComplete = true
   useEffect(() => {
     if (isComplete) {
       const saveProgress = async () => {
         const token = localStorage.getItem("tagedu_token");
-        if (!token) return; // Nếu chưa đăng nhập thì không lưu
-
+        if (!token) return;
         try {
           await fetch(`${API_URL}/progress/complete`, {
             method: "POST",
@@ -56,16 +60,15 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
             },
             body: JSON.stringify({ challengeId: "challenge7" }),
           });
-          console.log("Đã lưu tiến độ Thử thách 1 thành công!");
         } catch (error) {
           console.error("Lỗi khi lưu tiến độ:", error);
         }
       };
-
       saveProgress();
     }
   }, [isComplete]);
 
+  // ── Desktop drag handlers ──────────────────────────────────────────────────
   const handleDrop = useCallback(
     (categoryId: string) => {
       if (!draggedId) return;
@@ -83,11 +86,106 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
     [draggedId]
   );
 
+  // ── Mobile: native touch listeners với { passive: false } ─────────────────
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const getCategoryAtPoint = (x: number, y: number): string | null => {
+      // Tạm ẩn clone để elementFromPoint xuyên qua được
+      if (dragCloneRef.current) dragCloneRef.current.style.display = "none";
+      const el = document.elementFromPoint(x, y);
+      if (dragCloneRef.current) dragCloneRef.current.style.display = "";
+      return el?.closest("[data-category]")?.getAttribute("data-category") ?? null;
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      const target = (e.target as HTMLElement).closest("[data-item-id]");
+      if (!target) return;
+
+      // preventDefault hợp lệ vì listener được đăng ký với { passive: false }
+      e.preventDefault();
+
+      const itemId = target.getAttribute("data-item-id")!;
+      activeTouchItemId.current = itemId;
+
+      // Tạo clone theo ngón tay
+      const rect = target.getBoundingClientRect();
+      const clone = target.cloneNode(true) as HTMLDivElement;
+      clone.style.cssText = `
+        position: fixed;
+        left: ${rect.left}px;
+        top: ${rect.top}px;
+        width: ${rect.width}px;
+        pointer-events: none;
+        opacity: 0.85;
+        z-index: 9999;
+        transform: scale(1.05);
+      `;
+      document.body.appendChild(clone);
+      dragCloneRef.current = clone;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!activeTouchItemId.current) return;
+      e.preventDefault();
+
+      const touch = e.touches[0];
+      if (dragCloneRef.current) {
+        const w = dragCloneRef.current.offsetWidth;
+        const h = dragCloneRef.current.offsetHeight;
+        dragCloneRef.current.style.left = `${touch.clientX - w / 2}px`;
+        dragCloneRef.current.style.top = `${touch.clientY - h / 2}px`;
+      }
+
+      setHighlightedCat(getCategoryAtPoint(touch.clientX, touch.clientY));
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      // Không gọi preventDefault ở touchend (cancelable=false khi đang scroll)
+      if (!activeTouchItemId.current) return;
+
+      // Dọn clone
+      if (dragCloneRef.current) {
+        document.body.removeChild(dragCloneRef.current);
+        dragCloneRef.current = null;
+      }
+      setHighlightedCat(null);
+
+      const touch = e.changedTouches[0];
+      const cat = getCategoryAtPoint(touch.clientX, touch.clientY);
+      const item = ALL_ITEMS.find((i) => i.id === activeTouchItemId.current);
+
+      if (item && cat) {
+        if (item.category === cat) {
+          setPlaced((prev) => ({ ...prev, [item.id]: cat }));
+        } else {
+          setShakeId(item.id);
+          setTimeout(() => setShakeId(null), 400);
+        }
+      }
+
+      activeTouchItemId.current = null;
+    };
+
+    // { passive: false } cho phép gọi preventDefault() bên trong
+    container.addEventListener("touchstart", onTouchStart, { passive: false });
+    container.addEventListener("touchmove", onTouchMove, { passive: false });
+    container.addEventListener("touchend", onTouchEnd);
+
+    return () => {
+      container.removeEventListener("touchstart", onTouchStart);
+      container.removeEventListener("touchmove", onTouchMove);
+      container.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [unplaced.length]); // re-attach khi số item thay đổi
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   const itemsInCategory = (catId: string) =>
     ALL_ITEMS.filter((item) => placed[item.id] === catId);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8 pb-24" ref={containerRef}>
       <h2 className="mb-1 text-xl font-bold text-foreground sm:text-2xl">
         Thử thách 1: Phân loại phần mềm
       </h2>
@@ -111,7 +209,7 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
         </div>
       ) : (
         <>
-          {/* Draggable items */}
+          {/* Draggable items — data-item-id để native listener nhận diện */}
           <div className="mb-8 flex flex-wrap gap-3">
             {unplaced.map((item) => {
               const Icon = item.icon;
@@ -119,9 +217,10 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
               return (
                 <div
                   key={item.id}
+                  data-item-id={item.id}
                   draggable
                   onDragStart={() => setDraggedId(item.id)}
-                  className={`flex cursor-grab items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 shadow-sm select-none transition-colors active:cursor-grabbing ${
+                  className={`flex cursor-grab items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 shadow-sm select-none transition-colors active:cursor-grabbing touch-none ${
                     isShaking
                       ? "animate-shake border-destructive bg-destructive/5"
                       : "hover:border-primary/40 hover:shadow-md"
@@ -134,14 +233,19 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
             })}
           </div>
 
-          {/* Drop zones */}
+          {/* Drop zones — data-category để getCategoryAtPoint nhận diện */}
           <div className="grid gap-4 sm:grid-cols-3">
             {CATEGORIES.map((cat) => (
               <div
                 key={cat.id}
+                data-category={cat.id}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => handleDrop(cat.id)}
-                className="min-h-[180px] rounded-xl border-2 border-dashed border-border bg-secondary/40 p-4 transition-colors"
+                className={`min-h-[180px] rounded-xl border-2 border-dashed p-4 transition-colors ${
+                  highlightedCat === cat.id
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-secondary/40"
+                }`}
               >
                 <h3 className="mb-3 text-center text-sm font-semibold text-foreground">
                   {cat.title}

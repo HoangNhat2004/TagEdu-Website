@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import { GraduationCap, LogIn, LogOut, User, Settings, ShieldAlert } from "lucide-react";
+import { GraduationCap, LogIn, LogOut, User, ShieldAlert } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthModal } from "./AuthModal";
 import { ProfileModal } from "./ProfileModal";
@@ -46,13 +46,6 @@ export default function NavBar() {
     window.location.href = "/";
   };
 
-  // Tên ngắn: lấy từ cuối cùng (tên riêng trong tiếng Việt)
-  const getShortName = (fullName: string) => {
-    if (!fullName) return "";
-    const parts = fullName.trim().split(" ");
-    return parts[parts.length - 1];
-  };
-
   const isTransparent = isHomePage && !isScrolled;
 
   return (
@@ -77,19 +70,16 @@ export default function NavBar() {
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-1 sm:gap-3 min-w-0">
+          <div className="flex items-center gap-1 sm:gap-3 min-w-0 overflow-hidden">
             {currentUser ? (
-              <div className={`flex items-center gap-1 sm:gap-2 border-r pr-2 sm:pr-4 mr-1 sm:mr-2 min-w-0 ${
+              <div className={`flex items-center gap-1 sm:gap-2 border-r pr-2 sm:pr-4 mr-1 sm:mr-2 min-w-0 overflow-hidden ${
                 isTransparent ? "border-white/20" : "border-border/50"
               }`}>
 
-                {/* Avatar + Tên:
-                    - Mobile: avatar + tên ngắn (tên riêng), vd "Nhật"
-                    - Desktop: avatar + họ tên đầy đủ
-                    Bấm vào để mở ProfileModal */}
+                {/* Avatar + Tên: mobile text-xs để vừa full tên, desktop text-sm bình thường */}
                 <button
                   onClick={() => setIsProfileModalOpen(true)}
-                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors min-w-0 ${
+                  className={`flex items-center gap-1.5 min-w-0 flex-1 transition-colors ${
                     isTransparent
                       ? "text-white/90 hover:text-white"
                       : "text-muted-foreground hover:text-foreground"
@@ -101,14 +91,13 @@ export default function NavBar() {
                   }`}>
                     <User className="h-4 w-4" />
                   </div>
-                  {/* Mobile: tên riêng ngắn gọn | Desktop: họ tên đầy đủ */}
-                  <span className="truncate max-w-[70px] sm:max-w-[180px]">
-                    <span className="sm:hidden">{getShortName(currentUser.fullName)}</span>
-                    <span className="hidden sm:inline">{currentUser.fullName}</span>
+                  {/* Mobile: text-xs + font-medium để vừa tên dài | Desktop: text-sm bình thường */}
+                  <span className="flex-1 min-w-0 truncate text-xs font-medium sm:text-sm">
+                    {currentUser.fullName}
                   </span>
                 </button>
 
-                {/* Admin */}
+                {/* Admin button */}
                 {currentUser.role === 'admin' && (
                   <Button
                     variant="ghost"
@@ -126,23 +115,7 @@ export default function NavBar() {
                   </Button>
                 )}
 
-                {/* Settings - desktop only */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`hidden sm:flex h-8 px-2 shrink-0 ${
-                    isTransparent
-                      ? "text-white/90 hover:bg-white/10 hover:text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                  onClick={() => setIsProfileModalOpen(true)}
-                  title="Chỉnh sửa hồ sơ"
-                >
-                  <Settings className="h-4 w-4 mr-1" />
-                  Hồ sơ
-                </Button>
-
-                {/* Logout */}
+                {/* Logout: mobile chỉ icon, desktop icon + chữ */}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -159,7 +132,8 @@ export default function NavBar() {
                 </Button>
               </div>
             ) : (
-              <div className={`border-r pr-2 sm:pr-4 mr-1 sm:mr-2 ${
+              // Chưa đăng nhập: luôn hiện chữ "Đăng nhập"
+              <div className={`border-r pr-2 sm:pr-4 mr-1 sm:mr-2 shrink-0 ${
                 isTransparent ? "border-white/20" : "border-border/50"
               }`}>
                 <Button
@@ -171,7 +145,7 @@ export default function NavBar() {
                   }`}
                 >
                   <LogIn className="h-4 w-4" />
-                  <span className="hidden sm:inline">Đăng nhập</span>
+                  <span>Đăng nhập</span>
                 </Button>
               </div>
             )}
