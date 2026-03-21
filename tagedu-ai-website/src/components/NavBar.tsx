@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { GraduationCap, LogIn, LogOut, User, Settings, ShieldAlert } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom"; 
+import { useNavigate, useLocation } from "react-router-dom";
 import { AuthModal } from "./AuthModal";
 import { ProfileModal } from "./ProfileModal";
 
@@ -12,8 +12,8 @@ export default function NavBar() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  const navigate = useNavigate(); 
-  const location = useLocation(); 
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const isHomePage = location.pathname === "/";
 
@@ -43,7 +43,14 @@ export default function NavBar() {
     localStorage.removeItem("tagedu_token");
     localStorage.removeItem("tagedu_user");
     setCurrentUser(null);
-    window.location.href = "/"; 
+    window.location.href = "/";
+  };
+
+  // Tên ngắn: lấy từ cuối cùng (tên riêng trong tiếng Việt)
+  const getShortName = (fullName: string) => {
+    if (!fullName) return "";
+    const parts = fullName.trim().split(" ");
+    return parts[parts.length - 1];
   };
 
   const isTransparent = isHomePage && !isScrolled;
@@ -58,8 +65,9 @@ export default function NavBar() {
         }`}
       >
         <div className="container flex h-16 items-center justify-between px-4 md:px-8">
-          
-          <div className="flex items-center gap-2">
+
+          {/* Logo */}
+          <div className="flex items-center gap-2 shrink-0">
             <button onClick={() => navigate("/")} className="flex items-center gap-2">
               <GraduationCap className={`h-8 w-8 ${isTransparent ? "text-white" : "text-primary"}`} />
               <span className={`text-xl font-bold tracking-tight ${isTransparent ? "text-white" : "text-primary"}`}>
@@ -68,60 +76,99 @@ export default function NavBar() {
             </button>
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* Right side */}
+          <div className="flex items-center gap-1 sm:gap-3 min-w-0">
             {currentUser ? (
-              <div className={`flex items-center gap-2 sm:gap-3 border-r pr-4 mr-2 ${isTransparent ? "border-white/20" : "border-border/50"}`}>
-                <div className={`hidden sm:flex items-center gap-2 text-sm font-medium mr-2 ${isTransparent ? "text-white/90" : "text-muted-foreground"}`}>
-                  <div className={`flex h-7 w-7 items-center justify-center rounded-full ${isTransparent ? "bg-white/20 text-white" : "bg-primary/10 text-primary"}`}>
+              <div className={`flex items-center gap-1 sm:gap-2 border-r pr-2 sm:pr-4 mr-1 sm:mr-2 min-w-0 ${
+                isTransparent ? "border-white/20" : "border-border/50"
+              }`}>
+
+                {/* Avatar + Tên:
+                    - Mobile: avatar + tên ngắn (tên riêng), vd "Nhật"
+                    - Desktop: avatar + họ tên đầy đủ
+                    Bấm vào để mở ProfileModal */}
+                <button
+                  onClick={() => setIsProfileModalOpen(true)}
+                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors min-w-0 ${
+                    isTransparent
+                      ? "text-white/90 hover:text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  title={currentUser.fullName}
+                >
+                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
+                    isTransparent ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+                  }`}>
                     <User className="h-4 w-4" />
                   </div>
-                  <span className="max-w-[200px] truncate" title={currentUser.fullName}>
-                    {currentUser.fullName}
+                  {/* Mobile: tên riêng ngắn gọn | Desktop: họ tên đầy đủ */}
+                  <span className="truncate max-w-[70px] sm:max-w-[180px]">
+                    <span className="sm:hidden">{getShortName(currentUser.fullName)}</span>
+                    <span className="hidden sm:inline">{currentUser.fullName}</span>
                   </span>
-                </div>
-                
+                </button>
+
+                {/* Admin */}
                 {currentUser.role === 'admin' && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className={`h-8 px-2 ${isTransparent ? "text-red-300 hover:bg-white/10 hover:text-red-200" : "text-red-600 hover:bg-red-50"}`}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-8 px-1.5 sm:px-2 shrink-0 ${
+                      isTransparent
+                        ? "text-red-300 hover:bg-white/10 hover:text-red-200"
+                        : "text-red-600 hover:bg-red-50"
+                    }`}
                     onClick={() => navigate("/admin")}
                     title="Trang quản trị viên"
                   >
-                    <ShieldAlert className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline font-semibold">Quản trị</span>
+                    <ShieldAlert className="h-4 w-4" />
+                    <span className="hidden sm:inline font-semibold ml-1">Quản trị</span>
                   </Button>
                 )}
 
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={`h-8 px-2 ${isTransparent ? "text-white/90 hover:bg-white/10 hover:text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                {/* Settings - desktop only */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`hidden sm:flex h-8 px-2 shrink-0 ${
+                    isTransparent
+                      ? "text-white/90 hover:bg-white/10 hover:text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
                   onClick={() => setIsProfileModalOpen(true)}
                   title="Chỉnh sửa hồ sơ"
                 >
-                  <Settings className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Hồ sơ</span>
+                  <Settings className="h-4 w-4 mr-1" />
+                  Hồ sơ
                 </Button>
 
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={`h-8 px-2 ${isTransparent ? "text-red-300 hover:bg-white/10 hover:text-red-200" : "text-red-500 hover:bg-red-50 hover:text-red-600"}`}
+                {/* Logout */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`h-8 px-1.5 sm:px-2 shrink-0 ${
+                    isTransparent
+                      ? "text-red-300 hover:bg-white/10 hover:text-red-200"
+                      : "text-red-500 hover:bg-red-50 hover:text-red-600"
+                  }`}
                   onClick={() => setIsLogoutModalOpen(true)}
                   title="Đăng xuất"
                 >
-                  <LogOut className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Đăng xuất</span>
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-1">Đăng xuất</span>
                 </Button>
               </div>
             ) : (
-              <div className={`border-r pr-4 mr-2 ${isTransparent ? "border-white/20" : "border-border/50"}`}>
-                <Button 
+              <div className={`border-r pr-2 sm:pr-4 mr-1 sm:mr-2 ${
+                isTransparent ? "border-white/20" : "border-border/50"
+              }`}>
+                <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsAuthModalOpen(true)}
-                  className={`gap-2 h-8 ${isTransparent ? "text-white/90 hover:bg-white/10 hover:text-white" : ""}`}
+                  className={`gap-2 h-8 ${
+                    isTransparent ? "text-white/90 hover:bg-white/10 hover:text-white" : ""
+                  }`}
                 >
                   <LogIn className="h-4 w-4" />
                   <span className="hidden sm:inline">Đăng nhập</span>
@@ -129,25 +176,38 @@ export default function NavBar() {
               </div>
             )}
 
+            {/* CTA button */}
             {isHomePage ? (
               <Button
                 asChild
-                className={isTransparent ? "bg-white text-blue-900 hover:bg-white/90 border-0 font-semibold" : ""}
+                size="sm"
+                className={`shrink-0 text-xs sm:text-sm px-3 sm:px-4 ${
+                  isTransparent ? "bg-white text-blue-900 hover:bg-white/90 border-0 font-semibold" : ""
+                }`}
               >
-                <a href="#challenges">Bắt đầu ngay</a>
+                <a href="#challenges">
+                  <span className="hidden sm:inline">Bắt đầu ngay</span>
+                  <span className="sm:hidden">Bắt đầu</span>
+                </a>
               </Button>
             ) : (
-              <Button variant="outline" onClick={() => navigate("/")}>
-                Về Trang chủ
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 text-xs sm:text-sm px-3 sm:px-4"
+                onClick={() => navigate("/")}
+              >
+                <span className="hidden sm:inline">Về Trang chủ</span>
+                <span className="sm:hidden">Trang chủ</span>
               </Button>
             )}
           </div>
         </div>
       </nav>
 
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
         onSuccess={(user) => {
           setCurrentUser(user);
           window.dispatchEvent(new Event("auth_change"));
@@ -168,10 +228,23 @@ export default function NavBar() {
               <LogOut className="h-7 w-7" />
             </div>
             <h3 className="mb-2 text-xl font-bold text-gray-900">Xác nhận đăng xuất</h3>
-            <p className="mb-6 text-sm text-gray-500">Bạn có chắc chắn muốn đăng xuất khỏi hệ thống TagEdu không?</p>
+            <p className="mb-6 text-sm text-gray-500">
+              Bạn có chắc chắn muốn đăng xuất khỏi hệ thống TagEdu không?
+            </p>
             <div className="flex gap-3">
-              <Button variant="outline" className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50" onClick={() => setIsLogoutModalOpen(false)}>Hủy bỏ</Button>
-              <Button className="flex-1 bg-red-600 text-white hover:bg-red-700" onClick={handleLogout}>Đăng xuất</Button>
+              <Button
+                variant="outline"
+                className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
+                onClick={() => setIsLogoutModalOpen(false)}
+              >
+                Hủy bỏ
+              </Button>
+              <Button
+                className="flex-1 bg-red-600 text-white hover:bg-red-700"
+                onClick={handleLogout}
+              >
+                Đăng xuất
+              </Button>
             </div>
           </div>
         </div>
