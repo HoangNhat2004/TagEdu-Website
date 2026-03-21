@@ -2,34 +2,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 const { OAuth2Client } = require('google-auth-library');
-const nodemailer = require('nodemailer');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-// --- SỬA Ở ĐÂY ---
-// Giải quyết triệt để lỗi IPv6 trên Render bằng "family: 4"
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // Dùng STARTTLS
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false
-  },
-  // THÊM DÒNG NÀY: Ép Node.js chỉ dùng IPv4, bỏ qua IPv6
-  connectionTimeout: 10000, // Thêm timeout cho chắc chắn
-  socketTimeout: 15000,
-  tls: { ciphers: 'SSLv3' },
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, 
-  // BIỆN PHÁP CUỐI CÙNG CHO RENDER: Ép dùng IPv4
-  family: 4 
-});
-// -----------------
 
 exports.register = async (req, res) => {
   const { fullName, email, password } = req.body;
@@ -117,25 +91,24 @@ exports.forgotPassword = async (req, res) => {
       [otp, email]
     );
 
-    const mailOptions = {
-      from: `"TagEdu Support" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: 'Mã OTP Đặt lại mật khẩu - TagEdu',
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
-          <h2 style="color: #2563eb;">TagEdu AI</h2>
-          <p>Chào bạn,</p>
-          <p>Bạn vừa yêu cầu đặt lại mật khẩu. Dưới đây là mã OTP của bạn (có hiệu lực trong 15 phút):</p>
-          <h1 style="background: #f3f4f6; padding: 10px; letter-spacing: 5px; color: #1f2937;">${otp}</h1>
-          <p>Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>
-        </div>
-      `
-    };
+    // GỌI API GOOGLE APPS SCRIPT ĐỂ GỬI MAIL (VƯỢT QUA TƯỜNG LỬA RENDER)
+    const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
+    if (!scriptUrl) throw new Error("Thiếu biến môi trường GOOGLE_SCRIPT_URL");
 
-    await transporter.sendMail(mailOptions);
+    const response = await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ to: email, otp: otp }),
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const result = await response.json();
+    if (result.status !== 'success') {
+      throw new Error(result.message);
+    }
+
     res.json({ message: 'Đã gửi mã OTP đến email của bạn!' });
   } catch (error) {
-    console.error("Lỗi gửi email:", error);
+    console.error("Lỗi gửi email qua Google Apps Script:", error);
     res.status(500).json({ error: 'Lỗi hệ thống khi gửi email.' });
   }
 };
