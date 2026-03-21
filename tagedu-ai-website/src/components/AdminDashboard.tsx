@@ -1,18 +1,9 @@
 import { useState, useEffect } from "react";
 import { Users, MessageSquare, Trash2, ShieldAlert, Loader2, ChevronLeft, ChevronRight, AlertTriangle, Target, Eye, X, Bot, User as UserIcon } from "lucide-react"; 
 import { Button } from "./ui/button";
+import ReactMarkdown from "react-markdown";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-
-// Hàm dịch cú pháp Markdown (In đậm, Xuống dòng, Dấu chấm tròn)
-const formatMessage = (text: string) => {
-  if (!text) return "";
-  let formattedText = text
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Đổi **chữ** thành in đậm
-    .replace(/\n/g, "<br />") // Chuyển dấu enter thành xuống dòng
-    .replace(/(^|<br \/>)\s*\*\s/g, "$1&bull; "); // Đổi dấu * đầu dòng thành dấu chấm tròn (•)
-  return formattedText;
-};
 
 export function AdminDashboard() {
   const [stats, setStats] = useState({ totalUsers: 0, totalMessages: 0 });
@@ -320,7 +311,7 @@ export function AdminDashboard() {
                         </div>
                       )}
                       
-                      {/* Bong bóng tin nhắn */}
+                      {/* Bong bóng tin nhắn sử dụng ReactMarkdown */}
                       <div className={`flex flex-col gap-1 max-w-[85%] ${isAI ? 'items-start' : 'items-end'}`}>
                         <div 
                           className={`text-sm leading-relaxed px-5 py-3.5 shadow-sm ${
@@ -328,8 +319,21 @@ export function AdminDashboard() {
                               ? 'bg-white text-gray-800 rounded-2xl rounded-tl-sm border border-gray-100' 
                               : 'bg-primary text-white rounded-2xl rounded-tr-sm'
                           }`}
-                          dangerouslySetInnerHTML={{ __html: formatMessage(log.content) }}
-                        />
+                        >
+                           <div className="prose prose-sm max-w-none text-left prose-p:leading-relaxed prose-p:m-0 prose-ul:m-0 prose-ul:pl-5">
+                             <ReactMarkdown
+                                components={{
+                                  p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                                  strong: ({node, ...props}) => <strong className="font-semibold text-gray-900" {...props} />,
+                                  ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
+                                  ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
+                                  li: ({node, ...props}) => <li className="pl-1" {...props} />
+                                }}
+                             >
+                               {log.content}
+                             </ReactMarkdown>
+                           </div>
+                        </div>
                         <span className="text-xs text-muted-foreground font-medium px-2">{msgTime}</span>
                       </div>
 
