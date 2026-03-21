@@ -7,17 +7,16 @@ const nodemailer = require('nodemailer');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // --- SỬA Ở ĐÂY ---
-// Thêm thuộc tính host, port, secure và tls để ép dùng IPv4
+// Chuyển sang dùng cổng 587 với STARTTLS để vượt tường lửa Render
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // sử dụng SSL
+  port: 587,
+  secure: false, // false cho port 587, true cho 465
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
   tls: {
-    // Không reject những kết nối không có chứng chỉ (tuỳ chọn)
     rejectUnauthorized: false
   }
 });
