@@ -3,8 +3,7 @@ const db = require('../config/db');
 // 1. Lấy thống kê tổng quan (Admin Dashboard Stats)
 exports.getDashboardStats = async (req, res) => {
   try {
-    const [[userCount]] = await db.promise().query('SELECT COUNT(*) as total FROM users');
-    // [ĐÃ SỬA] Tổng tin nhắn hệ thống cũng chỉ đếm tin của User
+    const [[userCount]] = await db.promise().query("SELECT COUNT(*) as total FROM users WHERE role = 'user'");
     const [[messageCount]] = await db.promise().query("SELECT COUNT(*) as total FROM chat_messages WHERE sender_role = 'user'");
     res.json({ totalUsers: userCount.total, totalMessages: messageCount.total });
   } catch (error) {
@@ -28,6 +27,7 @@ exports.getAllUsers = async (req, res) => {
       FROM users u
       LEFT JOIN chat_messages m ON u.id = m.user_id AND m.sender_role = 'user'
       LEFT JOIN user_progress p ON u.id = p.user_id AND p.is_completed = 1
+      WHERE u.role = 'user'
       GROUP BY u.id
       ORDER BY u.created_at DESC
     `;

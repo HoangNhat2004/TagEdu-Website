@@ -215,36 +215,30 @@ export function AdminDashboard() {
                         </div>
                       </td>
                       <td className="p-4 text-center">
-                        {u.role !== 'admin' ? (
-                          <div className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
-                            isDoneAll ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                          }`}>
-                            <Target className="h-3.5 w-3.5" />
-                            {completed}/{totalChallenges}
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
+                        <div className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
+                          isDoneAll ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          <Target className="h-3.5 w-3.5" />
+                          {completed}/{totalChallenges}
+                        </div>
                       </td>
                       <td className="p-4 text-center">
-                        {u.role !== 'admin' && (
-                          <div className="flex items-center justify-center gap-1">
-                            <button 
-                              onClick={() => viewUserLogs(u.id, u.full_name)} 
-                              className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                              title={`Xem lịch sử chat AI của ${u.full_name}`}
-                            >
-                              <Eye className="h-5 w-5" />
-                            </button>
-                            <button 
-                              onClick={() => confirmDeleteUser(u.id, u.full_name)} 
-                              className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Xóa tài khoản này"
-                            >
-                              <Trash2 className="h-5 w-5" />
-                            </button>
-                          </div>
-                        )}
+                        <div className="flex items-center justify-center gap-1">
+                          <button 
+                            onClick={() => viewUserLogs(u.id, u.full_name)} 
+                            className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                            title={`Xem lịch sử chat AI của ${u.full_name}`}
+                          >
+                            <Eye className="h-5 w-5" />
+                          </button>
+                          <button 
+                            onClick={() => confirmDeleteUser(u.id, u.full_name)} 
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Xóa tài khoản này"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
