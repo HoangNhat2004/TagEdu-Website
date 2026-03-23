@@ -7,5 +7,6 @@ const authenticateToken = require('../middlewares/authMiddleware');
 router.get('/chat-history', authenticateToken, chatController.getChatHistory);
 router.delete('/chat-session', authenticateToken, chatController.deleteChatSession);
 router.post('/chat', authenticateToken, chatController.handleChat);
+router.post('/chat-feedback', authenticateToken, chatController.saveFeedback);
 
 module.exports = router;

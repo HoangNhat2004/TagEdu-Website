@@ -87,7 +87,7 @@ export function useChatbot(currentView: View, isOpen: boolean) {
 
         if (response.ok && data.length > 0) {
           setMessages(data.map((msg: any) => ({
-            id: msg.id.toString(), role: msg.role, content: msg.content, feedback: null
+            id: msg.id.toString(), role: msg.role, content: msg.content, feedback: msg.feedback ?? null
           })));
         } else if (response.status === 401 || response.status === 403) {
           setMessages([{
@@ -126,8 +126,26 @@ export function useChatbot(currentView: View, isOpen: boolean) {
     }
   };
 
-  const handleFeedback = (msgId: string, type: "up" | "down") => {
-    setMessages((prev) => prev.map((msg) => msg.id === msgId ? { ...msg, feedback: msg.feedback === type ? null : type } : msg));
+  const handleFeedback = async (msgId: string, type: "up" | "down") => {
+    // Tính giá trị mới ngay (toggle nếu bấm lại cùng loại)
+    const currentMsg = messages.find(m => m.id === msgId);
+    const newFeedback = currentMsg?.feedback === type ? null : type;
+
+    // Cập nhật UI ngay lập tức
+    setMessages((prev) => prev.map((msg) => msg.id === msgId ? { ...msg, feedback: newFeedback } : msg));
+
+    // Lưu vào database (chỉ khi msgId là số hợp lệ từ DB)
+    if (!isNaN(Number(msgId))) {
+      try {
+        await fetch(`${API_URL}/chat-feedback`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...getAuthHeader() },
+          body: JSON.stringify({ messageId: msgId, feedback: newFeedback }),
+        });
+      } catch (e) {
+        // Không cần báo lỗi cho user, feedback chỉ là tính năng phụ
+      }
+    }
   };
 
   const handleSend = async (quickMessage?: string) => {
@@ -188,6 +206,21 @@ export function useChatbot(currentView: View, isOpen: boolean) {
       if (aiText.trim() === "") {
         throw new Error("SILENT_CRASH");
       }
+
+      // Reload lịch sử từ DB để thay thế temp ID bằng ID thật → feedback mới hoạt động ngay lần đầu
+      try {
+        const histRes = await fetch(`${API_URL}/chat-history?challengeId=${currentView}&sessionId=default_session`, {
+          headers: { ...getAuthHeader() }
+        });
+        if (histRes.ok) {
+          const histData = await histRes.json();
+          if (histData.length > 0) {
+            setMessages(histData.map((msg: any) => ({
+              id: msg.id.toString(), role: msg.role, content: msg.content, feedback: msg.feedback ?? null
+            })));
+          }
+        }
+      } catch (e) { /* Không ảnh hưởng luồng chính */ }
 
     } catch (error: any) {
       setIsThinking(false); // Đảm bảo tắt bong bóng suy nghĩ

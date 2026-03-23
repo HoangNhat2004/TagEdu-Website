@@ -9,12 +9,28 @@ exports.getChatHistory = async (req, res) => {
 
   try {
     const [rows] = await db.promise().query(
-      'SELECT id, sender_role as role, content FROM chat_messages WHERE user_id = ? AND challenge_id = ? AND session_id = ? ORDER BY created_at ASC',
+      'SELECT id, sender_role as role, content, feedback FROM chat_messages WHERE user_id = ? AND challenge_id = ? AND session_id = ? ORDER BY created_at ASC',
       [userId, challengeId, sessionId]
     );
     res.json(rows);
   } catch (error) {
     res.status(500).json({ error: 'Đã có lỗi xảy ra khi lấy dữ liệu.' });
+  }
+};
+
+exports.saveFeedback = async (req, res) => {
+  const userId = req.user.userId;
+  const { messageId, feedback } = req.body;
+  if (!messageId) return res.status(400).json({ error: 'Thiếu messageId' });
+
+  try {
+    await db.promise().query(
+      'UPDATE chat_messages SET feedback = ? WHERE id = ? AND user_id = ?',
+      [feedback, messageId, userId]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Lỗi khi lưu feedback.' });
   }
 };
 

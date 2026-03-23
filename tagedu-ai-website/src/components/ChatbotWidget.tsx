@@ -254,8 +254,8 @@ export function ChatbotWidget({ currentView }: ChatbotProps) {
         )}
 
         {/* Input area */}
-        <div className="border-t border-gray-100 bg-white px-3 pt-3 pb-3 shrink-0">
-          <div className="flex items-end gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+        <div className="border-t border-gray-100 bg-white px-3 pt-2 pb-2 shrink-0">
+          <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-1.5 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
             <textarea
               ref={textareaRef}
               rows={1}
@@ -265,19 +265,19 @@ export function ChatbotWidget({ currentView }: ChatbotProps) {
               onKeyDown={handleKeyDown}
               disabled={isLoading || !isLoggedIn}
               className="flex-1 resize-none bg-transparent text-[14px] text-gray-800 placeholder:text-gray-400
-                focus:outline-none disabled:opacity-50 max-h-[120px] min-h-[24px]"
-              style={{ lineHeight: "1.5" }}
+                focus:outline-none disabled:opacity-50 max-h-[120px] min-h-[22px]"
+              style={{ lineHeight: "1.5", paddingTop: "2px", paddingBottom: "2px" }}
             />
             <button
               onClick={() => handleSend()}
               disabled={!inputValue.trim() || isLoading || !isLoggedIn}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-white
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-white
                 hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             >
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
             </button>
           </div>
-          <p className="mt-2 text-center text-[10px] text-gray-400">
+          <p className="mt-1.5 text-center text-[10px] text-gray-400">
             TagEdu AI chỉ định hướng tư duy, tuyệt đối không giải hộ.
           </p>
         </div>

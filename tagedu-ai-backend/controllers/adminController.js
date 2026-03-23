@@ -50,6 +50,8 @@ exports.getUserChatLogs = async (req, res) => {
         id, 
         sender_role as role, 
         content, 
+        feedback,
+        challenge_id,
         created_at 
       FROM chat_messages 
       WHERE user_id = ? 

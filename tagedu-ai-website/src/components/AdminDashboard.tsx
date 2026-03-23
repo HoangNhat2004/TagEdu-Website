@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, MessageSquare, Trash2, ShieldAlert, Loader2, ChevronLeft, ChevronRight, AlertTriangle, Target, Eye, X, Bot, User as UserIcon } from "lucide-react"; 
+import { Users, MessageSquare, Trash2, ShieldAlert, Loader2, ChevronLeft, ChevronRight, AlertTriangle, Target, Eye, X, Bot, User as UserIcon, ThumbsUp, ThumbsDown, Search } from "lucide-react"; 
 import { Button } from "./ui/button";
 import ReactMarkdown from "react-markdown";
 
@@ -23,6 +23,11 @@ export function AdminDashboard() {
   const [selectedUserForLogs, setSelectedUserForLogs] = useState<{ id: number; name: string } | null>(null);
   const [chatLogs, setChatLogs] = useState<any[]>([]);
   const [isLogsLoading, setIsLogsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("landing");
+
+  // Search states
+  const [userSearch, setUserSearch] = useState("");
+  const [chatSearch, setChatSearch] = useState("");
 
   const token = localStorage.getItem("tagedu_token");
 
@@ -56,6 +61,8 @@ export function AdminDashboard() {
     setIsLogsModalOpen(true);
     setIsLogsLoading(true);
     setChatLogs([]);
+    setActiveTab("landing");
+    setChatSearch("");
 
     try {
       const res = await fetch(`${API_URL}/admin/users/${userId}/logs`, {
@@ -102,7 +109,16 @@ export function AdminDashboard() {
     }
   };
 
-  const totalPages = Math.ceil(users.length / usersPerPage);
+  const filteredUsers = users.filter(u =>
+    u.full_name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+    u.email?.toLowerCase().includes(userSearch.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [userSearch]);
 
   useEffect(() => {
     if (totalPages > 0 && currentPage > totalPages) {
@@ -112,7 +128,7 @@ export function AdminDashboard() {
 
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
@@ -150,8 +166,18 @@ export function AdminDashboard() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-            <h2 className="text-lg font-bold text-gray-800">Quản lý Tài khoản</h2>
+          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between gap-4">
+            <h2 className="text-lg font-bold text-gray-800 shrink-0">Quản lý Tài khoản</h2>
+            <div className="relative w-full max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Tìm tên hoặc email..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition"
+              />
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[650px]">
@@ -230,7 +256,7 @@ export function AdminDashboard() {
           {totalPages > 1 && (
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
               <span className="text-sm text-gray-500">
-                Đang hiển thị <span className="font-semibold text-gray-900">{indexOfFirstUser + 1}</span> đến <span className="font-semibold text-gray-900">{Math.min(indexOfLastUser, users.length)}</span> trong tổng số <span className="font-semibold text-gray-900">{users.length}</span> tài khoản
+                Đang hiển thị <span className="font-semibold text-gray-900">{indexOfFirstUser + 1}</span> đến <span className="font-semibold text-gray-900">{Math.min(indexOfLastUser, filteredUsers.length)}</span> trong tổng số <span className="font-semibold text-gray-900">{filteredUsers.length}</span> tài khoản
               </span>
               <div className="flex gap-2">
                 <button 
@@ -269,59 +295,110 @@ export function AdminDashboard() {
       </div>
 
       {/* MODAL GIÁM SÁT LỊCH SỬ CHAT AI */}
-      {isLogsModalOpen && selectedUserForLogs && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 p-4">
-          <div className="w-full max-w-2xl h-full max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
-            
-            <div className="px-6 py-4 border-b border-gray-100 bg-white flex items-center justify-between z-10 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="bg-primary/10 p-2 rounded-lg text-primary">
-                  <Bot className="h-6 w-6" />
+      {isLogsModalOpen && selectedUserForLogs && (() => {
+        const TABS = [
+          { key: "landing",    label: "🏠 Trang chủ" },
+          { key: "challenge7", label: "🧩 Thử thách 1" },
+          { key: "challenge8", label: "🚀 Thử thách 2" },
+        ];
+
+        const filteredLogs = chatLogs
+          .filter(log => log.challenge_id === activeTab)
+          .filter(log => chatSearch === "" || log.content?.toLowerCase().includes(chatSearch.toLowerCase()));
+
+        return (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 p-4">
+            <div className="w-full max-w-2xl h-full max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-gray-100 bg-white flex items-center justify-between z-10 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/10 p-2 rounded-lg text-primary">
+                    <Bot className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">TagEdu AI</h3>
+                    <p className="text-sm text-gray-500 font-medium">Lịch sử của: <strong className="text-gray-900">{selectedUserForLogs.name}</strong></p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">TagEdu AI</h3>
-                  <p className="text-sm text-gray-500 font-medium">Lịch sử của: <strong className="text-gray-900">{selectedUserForLogs.name}</strong></p>
+                <button
+                  onClick={() => setIsLogsModalOpen(false)}
+                  className="p-2 rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex items-center border-b border-gray-100 bg-white px-4 shrink-0 gap-2">
+                <div className="flex flex-1">
+                  {TABS.map(tab => {
+                    const count = chatLogs.filter(l => l.challenge_id === tab.key && l.role === 'user').length;
+                    return (
+                      <button
+                        key={tab.key}
+                        onClick={() => { setActiveTab(tab.key); setChatSearch(""); }}
+                        className={`relative flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors
+                          ${activeTab === tab.key
+                            ? 'text-primary border-b-2 border-primary -mb-px'
+                            : 'text-gray-500 hover:text-gray-800'
+                          }`}
+                      >
+                        {tab.label}
+                        {count > 0 && (
+                          <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold
+                            ${activeTab === tab.key ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-500'}`}>
+                            {count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-              <button 
-                onClick={() => setIsLogsModalOpen(false)} 
-                className="p-2 rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
 
-            <div className="flex-1 overflow-y-auto p-6 bg-[#f9fafb] space-y-6">
-              {isLogsLoading ? (
-                <div className="flex flex-col items-center justify-center h-full gap-3 text-primary">
-                  <Loader2 className="h-10 w-10 animate-spin" />
-                  <p className="font-medium text-sm text-muted-foreground">Đang tải lịch sử hội thoại...</p>
+              {/* Search trong chat */}
+              <div className="px-4 py-2.5 bg-white border-b border-gray-100 shrink-0">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm tin nhắn..."
+                    value={chatSearch}
+                    onChange={(e) => setChatSearch(e.target.value)}
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-9 pr-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition"
+                  />
                 </div>
-              ) : chatLogs.length > 0 ? (
-                chatLogs.map((log) => {
-                  const isAI = log.role === 'ai';
-                  const msgTime = new Date(log.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+              </div>
 
-                  return (
-                    <div key={log.id} className={`flex gap-3 w-full ${isAI ? 'justify-start' : 'justify-end'}`}>
-                      {/* Avatar AI */}
-                      {isAI && (
-                        <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full mt-1 bg-primary text-white shadow-md">
-                          <Bot className="h-5 w-5" />
-                        </div>
-                      )}
-                      
-                      {/* Bong bóng tin nhắn sử dụng ReactMarkdown */}
-                      <div className={`flex flex-col gap-1 max-w-[85%] ${isAI ? 'items-start' : 'items-end'}`}>
-                        <div 
-                          className={`text-sm leading-relaxed px-5 py-3.5 shadow-sm ${
-                            isAI 
-                              ? 'bg-white text-gray-800 rounded-2xl rounded-tl-sm border border-gray-100' 
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-6 bg-[#f9fafb] space-y-6">
+                {isLogsLoading ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-3 text-primary">
+                    <Loader2 className="h-10 w-10 animate-spin" />
+                    <p className="font-medium text-sm text-muted-foreground">Đang tải lịch sử hội thoại...</p>
+                  </div>
+                ) : filteredLogs.length > 0 ? (
+                  filteredLogs.map((log) => {
+                    const isAI = log.role === 'ai';
+                    const msgTime = new Date(log.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+
+                    return (
+                      <div key={log.id} className={`flex gap-3 w-full ${isAI ? 'justify-start' : 'justify-end'}`}>
+                        {isAI && (
+                          <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full mt-1 bg-primary text-white shadow-md">
+                            <Bot className="h-5 w-5" />
+                          </div>
+                        )}
+
+                        <div className={`flex flex-col gap-1 max-w-[85%] ${isAI ? 'items-start' : 'items-end'}`}>
+                          <div className={`text-sm leading-relaxed px-5 py-3.5 shadow-sm ${
+                            isAI
+                              ? 'bg-white text-gray-800 rounded-2xl rounded-tl-sm border border-gray-100'
                               : 'bg-primary text-white rounded-2xl rounded-tr-sm'
-                          }`}
-                        >
-                           <div className="prose prose-sm max-w-none text-left prose-p:leading-relaxed prose-p:m-0 prose-ul:m-0 prose-ul:pl-5">
-                             <ReactMarkdown
+                          }`}>
+                            <div className="prose prose-sm max-w-none text-left prose-p:leading-relaxed prose-p:m-0 prose-ul:m-0 prose-ul:pl-5">
+                              <ReactMarkdown
                                 components={{
                                   p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
                                   strong: ({node, ...props}) => <strong className="font-semibold text-gray-900" {...props} />,
@@ -329,35 +406,56 @@ export function AdminDashboard() {
                                   ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
                                   li: ({node, ...props}) => <li className="pl-1" {...props} />
                                 }}
-                             >
-                               {log.content}
-                             </ReactMarkdown>
-                           </div>
+                              >
+                                {log.content}
+                              </ReactMarkdown>
+                            </div>
+                          </div>
+
+                          {/* Feedback badge */}
+                          {isAI && log.feedback && (
+                            <div className="flex items-center gap-1.5 ml-1 mt-0.5">
+                              {log.feedback === 'up' && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700">
+                                  <ThumbsUp className="h-3.5 w-3.5" /> Hữu ích
+                                </span>
+                              )}
+                              {log.feedback === 'down' && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">
+                                  <ThumbsDown className="h-3.5 w-3.5" /> Chưa hữu ích
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          <span className="text-xs text-muted-foreground font-medium px-2">{msgTime}</span>
                         </div>
-                        <span className="text-xs text-muted-foreground font-medium px-2">{msgTime}</span>
+
+                        {!isAI && (
+                          <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full mt-1 bg-blue-100 text-blue-700 shadow-sm border border-blue-200">
+                            <UserIcon className="h-5 w-5" />
+                          </div>
+                        )}
                       </div>
+                    );
+                  })
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-400 bg-white rounded-xl border border-dashed border-gray-200 p-8">
+                    <MessageSquare className="h-14 w-14" />
+                    <p className="font-semibold text-lg">
+                      {chatSearch ? `Không tìm thấy "${chatSearch}"` : "Chưa có tin nhắn nào ở mục này."}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {chatSearch ? "Thử từ khóa khác nhé." : `Học viên chưa chat với AI tại ${TABS.find(t => t.key === activeTab)?.label}.`}
+                    </p>
+                  </div>
+                )}
+              </div>
 
-                      {/* Avatar User */}
-                      {!isAI && (
-                        <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full mt-1 bg-blue-100 text-blue-700 shadow-sm border border-blue-200">
-                          <UserIcon className="h-5 w-5" />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-400 bg-white rounded-xl border border-dashed border-gray-200 p-8">
-                  <MessageSquare className="h-14 w-14" />
-                  <p className="font-semibold text-lg">Tài khoản này chưa có lịch sử chat với AI.</p>
-                  <p className="text-sm text-gray-500">Học viên chưa bắt đầu cuộc trò chuyện nào trên TagEdu.</p>
-                </div>
-              )}
             </div>
-
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {isDeleteModalOpen && userToDelete && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300">
