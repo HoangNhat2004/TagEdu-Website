@@ -166,9 +166,10 @@ export function AdminDashboard() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between gap-4">
+          {/* Header: stack on mobile, row on desktop */}
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center gap-3">
             <h2 className="text-lg font-bold text-gray-800 shrink-0">Quản lý Tài khoản</h2>
-            <div className="relative w-full max-w-xs">
+            <div className="relative w-full sm:max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
@@ -179,7 +180,9 @@ export function AdminDashboard() {
               />
             </div>
           </div>
-          <div className="overflow-x-auto">
+
+          {/* Desktop: bảng */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[650px]">
               <thead>
                 <tr className="bg-gray-50/50 text-gray-500 text-sm border-b border-gray-100">
@@ -195,9 +198,8 @@ export function AdminDashboard() {
               <tbody>
                 {currentUsers.map((u) => {
                   const completed = u.completed_challenges || 0;
-                  const totalChallenges = 2; 
+                  const totalChallenges = 2;
                   const isDoneAll = completed === totalChallenges;
-
                   return (
                     <tr key={u.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                       <td className="p-4 text-gray-500">#{u.id}</td>
@@ -224,18 +226,10 @@ export function AdminDashboard() {
                       </td>
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button 
-                            onClick={() => viewUserLogs(u.id, u.full_name)} 
-                            className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                            title={`Xem lịch sử chat AI của ${u.full_name}`}
-                          >
+                          <button onClick={() => viewUserLogs(u.id, u.full_name)} className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors" title={`Xem lịch sử chat AI của ${u.full_name}`}>
                             <Eye className="h-5 w-5" />
                           </button>
-                          <button 
-                            onClick={() => confirmDeleteUser(u.id, u.full_name)} 
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Xóa tài khoản này"
-                          >
+                          <button onClick={() => confirmDeleteUser(u.id, u.full_name)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Xóa tài khoản này">
                             <Trash2 className="h-5 w-5" />
                           </button>
                         </div>
@@ -247,10 +241,55 @@ export function AdminDashboard() {
             </table>
           </div>
 
+          {/* Mobile: dạng card */}
+          <div className="md:hidden divide-y divide-gray-50">
+            {currentUsers.map((u) => {
+              const completed = u.completed_challenges || 0;
+              const totalChallenges = 2;
+              const isDoneAll = completed === totalChallenges;
+              return (
+                <div key={u.id} className="p-4 hover:bg-gray-50/50 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-gray-900">{u.full_name}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {u.role.toUpperCase()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-0.5 truncate">{u.email}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">#{u.id}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => viewUserLogs(u.id, u.full_name)} className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                        <Eye className="h-5 w-5" />
+                      </button>
+                      <button onClick={() => confirmDeleteUser(u.id, u.full_name)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-3">
+                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-bold">
+                      <MessageSquare className="h-3 w-3 text-gray-500" />
+                      {u.message_count || 0} tin nhắn
+                    </div>
+                    <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
+                      isDoneAll ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                    }`}>
+                      <Target className="h-3 w-3" />
+                      {completed}/{totalChallenges} thử thách
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           {totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
-              <span className="text-sm text-gray-500">
-                Đang hiển thị <span className="font-semibold text-gray-900">{indexOfFirstUser + 1}</span> đến <span className="font-semibold text-gray-900">{Math.min(indexOfLastUser, filteredUsers.length)}</span> trong tổng số <span className="font-semibold text-gray-900">{filteredUsers.length}</span> tài khoản
+            <div className="px-4 sm:px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white">
+              <span className="text-sm text-gray-500 text-center sm:text-left">
+                Hiển thị <span className="font-semibold text-gray-900">{indexOfFirstUser + 1}</span>–<span className="font-semibold text-gray-900">{Math.min(indexOfLastUser, filteredUsers.length)}</span> / <span className="font-semibold text-gray-900">{filteredUsers.length}</span> tài khoản
               </span>
               <div className="flex gap-2">
                 <button 
