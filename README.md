@@ -53,6 +53,7 @@ TagEdu-Website/
 │   │   ├── adminRoutes.js
 │   │   ├── authRoutes.js
 │   │   ├── chatRoutes.js
+│   │   ├── progressRoutes.js
 │   │   └── userRoutes.js
 │   └── server.js
 │
@@ -88,7 +89,7 @@ Tạo file `.env`:
 ```env
 PORT=5000
 DB_HOST=your_mysql_host
-DB_PORT=3306
+DB_PORT=your_mysql_port
 DB_USER=your_user
 DB_PASSWORD=your_password
 DB_NAME=your_database
@@ -116,10 +117,54 @@ npm run dev
 ```
 
 ### 4. Thiết lập Database
-Chạy lệnh SQL để thêm cột feedback (nếu chưa có):
+
+Tạo database và chạy lần lượt các lệnh SQL sau:
+
 ```sql
-ALTER TABLE chat_messages ADD COLUMN feedback ENUM('up', 'down') DEFAULT NULL;
+CREATE DATABASE tagedu_db CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+USE tagedu_db;
+
+CREATE TABLE users (
+  id INT NOT NULL AUTO_INCREMENT,
+  full_name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  reset_otp VARCHAR(6) DEFAULT NULL,
+  reset_otp_expiry DATETIME DEFAULT NULL,
+  profile_bio TEXT,
+  role ENUM('user', 'admin') DEFAULT 'user',
+  PRIMARY KEY (id),
+  UNIQUE KEY email (email)
+);
+
+CREATE TABLE chat_messages (
+  id INT NOT NULL AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  challenge_id VARCHAR(50) DEFAULT NULL,
+  session_id VARCHAR(100) DEFAULT 'default_session',
+  sender_role ENUM('user', 'ai') NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  feedback ENUM('up', 'down') DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY user_id (user_id),
+  CONSTRAINT chat_messages_ibfk_1 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE TABLE user_progress (
+  id INT NOT NULL AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  challenge_id VARCHAR(50) NOT NULL,
+  is_completed TINYINT(1) DEFAULT 0,
+  completed_at TIMESTAMP DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY user_id (user_id),
+  CONSTRAINT user_progress_ibfk_1 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
 ```
+
+Lưu ý: Tạo bảng theo đúng thứ tự trên vì `chat_messages` và `user_progress` phụ thuộc vào bảng `users`.
 
 ---
 
