@@ -114,57 +114,35 @@ exports.forgotPassword = async (req, res) => {
       [otp, email]
     );
 
-    // GỬI EMAIL BẰNG NODEMAILER (đáng tin cậy hơn Google Apps Script)
-    const nodemailer = require('nodemailer');
+    // GỬI EMAIL BẰNG GOOGLE APPS SCRIPT (Vượt tường lửa chặn cổng SMTP của Render)
+    const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
+    
+    if (!scriptUrl) {
+      throw new Error("Missing GOOGLE_SCRIPT_URL in .env");
+    }
 
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      requireTLS: true,
-      family: 4, // ENFORCE IPv4
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+    const response = await fetch(scriptUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-      tls: {
-        rejectUnauthorized: false
-      }
+      body: JSON.stringify({
+        to: email,
+        otp: otp,
+        language: lang
+      })
     });
 
-    // Chọn nội dung theo ngôn ngữ
-    const subject = lang === 'en' 
-      ? 'OTP Reset Password - TagEdu' 
-      : 'Mã OTP Đặt lại mật khẩu - TagEdu';
+    if (!response.ok) {
+      throw new Error(`Google Script returned ${response.status}`);
+    }
 
-    const greeting = lang === 'en' ? 'Hi there,' : 'Chào bạn,';
-    const mainText = lang === 'en' 
-      ? 'You have requested to reset your password. Here is your OTP code (valid for 15 minutes):' 
-      : 'Bạn vừa yêu cầu đặt lại mật khẩu. Dưới đây là mã OTP của bạn (có hiệu lực trong 15 phút):';
-    const ignoreText = lang === 'en' 
-      ? 'If you did not request this, please ignore this email.' 
-      : 'Nếu bạn không yêu cầu, vui lòng bỏ qua email này.';
+    const result = await response.json();
+    if (result.status !== 'success') {
+      throw new Error("Google Script failed to send email");
+    }
 
-    const htmlBody = `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;background:#0d1117;padding:40px;border-radius:16px;">
-        <h2 style="color:#00d4ff;text-align:center;margin-bottom:8px;">TagEdu AI</h2>
-        <p style="color:#c9d1d9;text-align:center;">${greeting}</p>
-        <p style="color:#c9d1d9;text-align:center;">${mainText}</p>
-        <div style="background:#161b22;padding:24px;text-align:center;border-radius:12px;margin:24px 0;border:1px solid rgba(0,212,255,0.2);">
-          <h1 style="color:#00d4ff;letter-spacing:12px;font-size:36px;margin:0;">${otp}</h1>
-        </div>
-        <p style="color:#8b949e;text-align:center;font-size:14px;">${ignoreText}</p>
-      </div>
-    `;
-
-    await transporter.sendMail({
-      from: `"TagEdu Support" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: subject,
-      html: htmlBody,
-    });
-
-    console.log(`✅ OTP email sent to ${email} (lang: ${lang})`);
+    console.log(`✅ OTP email sent to ${email} via GAS (lang: ${lang})`);
     res.json({ message: lang === 'en' ? 'OTP has been sent to your email!' : 'Đã gửi mã OTP đến email của bạn!' });
   } catch (error) {
     console.error("Lỗi gửi email OTP:", error.message);
