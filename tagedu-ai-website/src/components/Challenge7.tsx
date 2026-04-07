@@ -1,31 +1,32 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Check, Monitor, Cpu, ShieldCheck, Database, Globe, FileText, Music, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 interface SoftwareItem {
   id: string;
-  name: string;
+  nameKey: string;
   icon: React.ElementType;
   category: string;
 }
 
 const ALL_ITEMS: SoftwareItem[] = [
-  { id: "os", name: "OS", icon: Monitor, category: "system" },
-  { id: "driver", name: "Driver", icon: Cpu, category: "system" },
-  { id: "antivirus", name: "Antivirus", icon: ShieldCheck, category: "utility" },
-  { id: "backup", name: "Backup", icon: Database, category: "utility" },
-  { id: "browser", name: "Browser", icon: Globe, category: "application" },
-  { id: "word", name: "Word", icon: FileText, category: "application" },
-  { id: "spotify", name: "Spotify", icon: Music, category: "application" },
-  { id: "email", name: "Email", icon: Mail, category: "application" },
+  { id: "os", nameKey: "c7.os", icon: Monitor, category: "system" },
+  { id: "driver", nameKey: "c7.driver", icon: Cpu, category: "system" },
+  { id: "antivirus", nameKey: "c7.antivirus", icon: ShieldCheck, category: "utility" },
+  { id: "backup", nameKey: "c7.backup", icon: Database, category: "utility" },
+  { id: "browser", nameKey: "c7.browser", icon: Globe, category: "application" },
+  { id: "word", nameKey: "c7.word", icon: FileText, category: "application" },
+  { id: "spotify", nameKey: "c7.spotify", icon: Music, category: "application" },
+  { id: "email", nameKey: "c7.email", icon: Mail, category: "application" },
 ];
 
 const CATEGORIES = [
-  { id: "system", title: "Phần mềm Hệ thống" },
-  { id: "utility", title: "Phần mềm Tiện ích" },
-  { id: "application", title: "Phần mềm Ứng dụng" },
+  { id: "system", titleKey: "c7.sys" },
+  { id: "utility", titleKey: "c7.util" },
+  { id: "application", titleKey: "c7.app" },
 ];
 
 interface ChallengeProps {
@@ -33,6 +34,7 @@ interface ChallengeProps {
 }
 
 const Challenge7 = ({ onNavigate }: ChallengeProps) => {
+  const { t } = useI18n();
   const [placed, setPlaced] = useState<Record<string, string>>({});
   const [shakeId, setShakeId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -187,23 +189,23 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 pb-24" ref={containerRef}>
       <h2 className="mb-1 text-xl font-bold text-foreground sm:text-2xl">
-        Thử thách 1: Phân loại phần mềm
+        {t("c7.title")}
       </h2>
       <p className="mb-6 text-sm text-muted-foreground">
-        Kéo mỗi phần mềm vào đúng loại của nó.
+        {t("c7.desc")}
       </p>
 
       {isComplete ? (
         <div className="flex flex-col items-center justify-center gap-6 rounded-xl border border-success bg-success/5 p-8 text-center">
           <p className="text-xl font-semibold text-success">
-            🎉 Hoàn hảo! Bạn đã phân loại đúng tất cả phần mềm!
+            {t("c7.success")}
           </p>
           <div className="flex gap-4">
             <Button onClick={() => setPlaced({})} variant="outline" size="lg">
-              🔄 Làm lại ngay
+              {t("c7.retry")}
             </Button>
             <Button onClick={() => onNavigate("landing")} size="lg">
-              Về trang chủ
+              {t("c7.home")}
             </Button>
           </div>
         </div>
@@ -227,7 +229,7 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
                   }`}
                 >
                   <Icon className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium">{item.name}</span>
+                  <span className="text-sm font-medium">{t(item.nameKey)}</span>
                 </div>
               );
             })}
@@ -248,7 +250,7 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
                 }`}
               >
                 <h3 className="mb-3 text-center text-sm font-semibold text-foreground">
-                  {cat.title}
+                  {t(cat.titleKey)}
                 </h3>
                 <div className="space-y-2">
                   {itemsInCategory(cat.id).map((item) => {
@@ -259,7 +261,7 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
                         className="flex items-center gap-2 rounded-lg border border-success/50 bg-success/5 px-3 py-2"
                       >
                         <Icon className="h-4 w-4 text-success" />
-                        <span className="text-sm font-medium">{item.name}</span>
+                        <span className="text-sm font-medium">{t(item.nameKey)}</span>
                         <Check className="ml-auto h-4 w-4 text-success" />
                       </div>
                     );

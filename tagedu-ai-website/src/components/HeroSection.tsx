@@ -1,48 +1,58 @@
-import { Button } from "./ui/button";
+import { useI18n } from "@/lib/i18n";
 import { ArrowRight } from "lucide-react";
 
-const HERO_BG_URL =
-  "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1920&q=80";
-
 export function HeroSection() {
+  const { t } = useI18n();
+
   return (
-    <section className="relative w-full py-24 md:py-32 lg:py-40 overflow-hidden">
+    <section className="relative w-full py-16 md:py-24 lg:py-32 cosmic-bg overflow-hidden">
+      {/* Background gradient orbs */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
 
-      {/* ── LỚP 1: Ảnh nền code editor ── */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${HERO_BG_URL})` }}
-        aria-hidden="true"
-      />
+      <div className="relative z-10 container px-4 md:px-8">
+        <div className="flex flex-col lg:flex-row items-start justify-between gap-8 lg:gap-16">
+          
+          {/* Left side: Title & Subtitle */}
+          <div className="flex-1 max-w-2xl">
+            <h1 className="mb-6" style={{ fontFamily: 'Outfit, Inter, sans-serif', overflow: 'visible' }}>
+              <span
+                className="block text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white"
+                style={{ lineHeight: 1.3 }}
+              >
+                {t("hero.title1")}
+              </span>
+              <span
+                className="block text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-gradient-cyan pt-3"
+                style={{ lineHeight: 1.4, paddingBottom: '4px' }}
+              >
+                {t("hero.title2")}
+              </span>
+            </h1>
+            <p className="text-gray-400 text-base md:text-lg max-w-lg leading-relaxed">
+              {t("hero.subtitle")}
+            </p>
+          </div>
 
-      {/* ── LỚP 2: Overlay tối hơn để text trắng dễ đọc ── */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(135deg, rgba(10,20,50,0.72) 0%, rgba(15,30,70,0.68) 50%, rgba(10,20,50,0.72) 100%)",
-        }}
-        aria-hidden="true"
-      />
+          {/* Right side: Mascot + Speech bubble */}
+          <div className="flex items-start gap-3 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+            {/* Mascot avatar */}
+            <div className="shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-full overflow-hidden border-2 border-cyan-500/30 shadow-lg shadow-cyan-500/10 animate-float">
+              <img
+                src="/mascot.png"
+                alt="Space Turtle Mascot"
+                className="w-full h-full object-cover"
+              />
+            </div>
 
-      {/* ── LỚP 3: Nội dung ── */}
-      <div className="relative z-10 container px-4 md:px-8 flex flex-col items-center text-center">
-        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl max-w-4xl text-balance mb-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-white">
-          <span>Học Code Chủ Động Cùng</span>
-          <span className="text-blue-400">TagEdu</span>
-        </h1>
-
-        <p className="max-w-[42rem] leading-normal text-blue-100/80 sm:text-xl sm:leading-8 mb-8 text-balance">
-          Nền tảng giáo dục thông minh giúp bạn giải quyết các bài toán lập
-          trình bằng cách định hướng tư duy, không giải hộ.
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto justify-center">
-          <Button size="lg" className="w-full sm:w-auto text-base bg-blue-500 hover:bg-blue-400 text-white border-0" asChild>
-            <a href="#challenges">
-              Làm thử thách ngay <ArrowRight className="ml-2 h-4 w-4" />
-            </a>
-          </Button>
+            {/* Speech bubble */}
+            <div className="glass-card px-5 py-4 max-w-xs md:max-w-sm relative">
+              <div className="absolute left-0 top-5 -translate-x-2 w-3 h-3 rotate-45 bg-[rgba(15,23,42,0.6)] border-l border-b border-cyan-500/10" />
+              <p className="text-sm text-gray-300 leading-relaxed">
+                "{t("hero.mascotMsg")}"
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </section>

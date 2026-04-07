@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { View } from "@/pages/Index";
+import { useI18n } from "@/lib/i18n";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -15,6 +16,8 @@ export function useChatbot(currentView: View, isOpen: boolean) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
+  const { t, language } = useI18n();
+  const historyLoadSeqRef = useRef(0);
   
   const [authTrigger, setAuthTrigger] = useState(0);
 
@@ -50,30 +53,32 @@ export function useChatbot(currentView: View, isOpen: boolean) {
   const getWelcomeMessage = (view: View) => {
     const userName = getActiveUser()?.fullName || "bạn";
     if (view === "challenge7") {
-      return `Chào ${userName}! Mình thấy bạn đang làm Thử thách 1: Phân loại phần mềm. Bạn cần gợi ý gì không?`;
+      return t("chat.welcomeChallenge7").replace("{name}", userName);
     } else if (view === "challenge8") {
-      return `Chào ${userName}! Mình thấy bạn đang ở Thử thách 2: Phần mềm Tàu vũ trụ. Hãy nói suy luận của bạn nhé!`;
+      return t("chat.welcomeChallenge8").replace("{name}", userName);
     }
-    return `Chào ${userName}! Mình là Trợ lý học tập TagEdu. Bạn cần hỗ trợ gì không?`;
+    return t("chat.welcomeDefault").replace("{name}", userName);
   };
 
   const getQuickReplies = (view: View) => {
     if (view === "challenge7") {
-      return ["Gợi ý cách phân loại", "Hệ thống và Tiện ích khác gì nhau?", "Cho mình xin một ví dụ"];
+      return [t("chat.qr.c7_1"), t("chat.qr.c7_2"), t("chat.qr.c7_3")];
     } else if (view === "challenge8") {
-      return ["Bắt đầu phân tích từ đâu?", "Phần mềm hệ thống ở đây là gì?", "Gợi ý kịch bản kiểm thử"];
+      return [t("chat.qr.c8_1"), t("chat.qr.c8_2"), t("chat.qr.c8_3")];
     }
-    return ["TagEdu là gì?", "Làm sao để bắt đầu học?", "AI hỗ trợ như thế nào?"];
+    return [t("chat.qr.default1"), t("chat.qr.default2"), t("chat.qr.default3")];
   };
 
   useEffect(() => {
     const loadChatHistory = async () => {
+      const loadSeq = ++historyLoadSeqRef.current;
       const token = localStorage.getItem("tagedu_token");
       if (!token) {
+        if (loadSeq !== historyLoadSeqRef.current) return;
         setMessages([{
           id: "guest-welcome",
           role: "ai",
-          content: "Chào bạn! Mình là Trợ lý học tập TagEdu. Vui lòng **Đăng nhập** ở góc trên cùng để bắt đầu trò chuyện và nhận gợi ý học tập nhé! 👋",
+          content: t("chat.guestWelcome"),
           feedback: null
         }]);
         return; 
@@ -86,14 +91,17 @@ export function useChatbot(currentView: View, isOpen: boolean) {
         const data = await response.json();
 
         if (response.ok && data.length > 0) {
+          if (loadSeq !== historyLoadSeqRef.current) return;
           setMessages(data.map((msg: any) => ({
             id: msg.id.toString(), role: msg.role, content: msg.content, feedback: msg.feedback ?? null
           })));
         } else if (response.status === 401 || response.status === 403) {
+          if (loadSeq !== historyLoadSeqRef.current) return;
           setMessages([{
-            id: "error-auth", role: "ai", content: "⚠️ Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại để xem lịch sử chat."
+            id: "error-auth", role: "ai", content: t("chat.sessionExpired")
           }]);
         } else {
+          if (loadSeq !== historyLoadSeqRef.current) return;
           setMessages([{
             id: "welcome-" + Date.now().toString(), role: "ai", content: getWelcomeMessage(currentView), feedback: null
           }]);
@@ -104,7 +112,7 @@ export function useChatbot(currentView: View, isOpen: boolean) {
     };
 
     if (isOpen) loadChatHistory();
-  }, [currentView, isOpen, authTrigger]); 
+  }, [currentView, isOpen, authTrigger, language]); 
 
   const handleClearChat = async () => {
     try {
@@ -119,22 +127,19 @@ export function useChatbot(currentView: View, isOpen: boolean) {
           id: "welcome-" + Date.now().toString(), role: "ai", content: getWelcomeMessage(currentView), feedback: null
         }]);
       } else {
-        alert("Có lỗi xảy ra hoặc bạn không có quyền xóa cuộc trò chuyện này.");
+        alert(t("chat.clearError"));
       }
     } catch (error) {
-      alert("Không thể kết nối đến máy chủ để xóa chat.");
+      alert(t("chat.clearNetworkError"));
     }
   };
 
   const handleFeedback = async (msgId: string, type: "up" | "down") => {
-    // Tính giá trị mới ngay (toggle nếu bấm lại cùng loại)
     const currentMsg = messages.find(m => m.id === msgId);
     const newFeedback = currentMsg?.feedback === type ? null : type;
 
-    // Cập nhật UI ngay lập tức
     setMessages((prev) => prev.map((msg) => msg.id === msgId ? { ...msg, feedback: newFeedback } : msg));
 
-    // Lưu vào database (chỉ khi msgId là số hợp lệ từ DB)
     if (!isNaN(Number(msgId))) {
       try {
         await fetch(`${API_URL}/chat-feedback`, {
@@ -143,7 +148,7 @@ export function useChatbot(currentView: View, isOpen: boolean) {
           body: JSON.stringify({ messageId: msgId, feedback: newFeedback }),
         });
       } catch (e) {
-        // Không cần báo lỗi cho user, feedback chỉ là tính năng phụ
+        // Không cần báo lỗi cho user
       }
     }
   };
@@ -151,6 +156,8 @@ export function useChatbot(currentView: View, isOpen: boolean) {
   const handleSend = async (quickMessage?: string) => {
     const messageToSend = typeof quickMessage === "string" ? quickMessage : inputValue;
     if (!messageToSend.trim() || isLoading) return;
+    // Invalidate pending history loads to avoid stale data overriding new messages.
+    historyLoadSeqRef.current += 1;
     
     const newUserMsg: Message = { id: "temp-" + Date.now().toString(), role: "user", content: messageToSend };
     const aiMsgId = "ai-" + Date.now().toString();
@@ -166,7 +173,7 @@ export function useChatbot(currentView: View, isOpen: boolean) {
       const response = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getAuthHeader() },
-        body: JSON.stringify({ challengeId: currentView, sessionId: "default_session", message: messageToSend }),
+        body: JSON.stringify({ challengeId: currentView, sessionId: "default_session", message: messageToSend, language }),
       });
 
       if (!response.ok) {
@@ -202,12 +209,10 @@ export function useChatbot(currentView: View, isOpen: boolean) {
         }
       }
 
-      // [MỚI] Bắt lỗi "Sập ngầm": Stream chạy xong nhưng không có chữ nào được trả về
       if (aiText.trim() === "") {
         throw new Error("SILENT_CRASH");
       }
 
-      // Reload lịch sử từ DB để thay thế temp ID bằng ID thật → feedback mới hoạt động ngay lần đầu
       try {
         const histRes = await fetch(`${API_URL}/chat-history?challengeId=${currentView}&sessionId=default_session`, {
           headers: { ...getAuthHeader() }
@@ -223,11 +228,8 @@ export function useChatbot(currentView: View, isOpen: boolean) {
       } catch (e) { /* Không ảnh hưởng luồng chính */ }
 
     } catch (error: any) {
-      setIsThinking(false); // Đảm bảo tắt bong bóng suy nghĩ
-      
-      const errorMsg = "⚠️ Hiện tại có quá nhiều học viên đang đặt câu hỏi nên hệ thống hơi quá tải. Bạn vui lòng đợi một chút rồi thử lại nhé! 🥺";
-      
-      // Thay thế bong bóng trống bằng câu xin lỗi
+      setIsThinking(false);
+      const errorMsg = t("chat.errorOverload");
       setMessages((prev) => prev.map((msg) => msg.id === aiMsgId ? { ...msg, content: errorMsg } : msg));
     } finally {
       setIsLoading(false);

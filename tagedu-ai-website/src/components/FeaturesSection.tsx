@@ -1,50 +1,75 @@
-import { Lightbulb, Bug, LineChart } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Compass, Shield, Zap } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 export function FeaturesSection() {
+  const { t } = useI18n();
+
   const features = [
     {
-      title: "Gợi ý tư duy giải quyết",
-      description: "Thay vì đưa ra đoạn code hoàn chỉnh, AI sẽ đặt câu hỏi gợi mở, hướng dẫn bạn từng bước tự tìm ra giải pháp tối ưu.",
-      icon: <Lightbulb className="h-10 w-10 text-yellow-500 mb-4" />
+      titleKey: "feature1.title",
+      descKey: "feature1.desc",
+      icon: <Compass className="h-8 w-8 text-cyan-400" />,
+      gradient: "from-cyan-500/20 to-blue-500/10",
+      borderColor: "border-cyan-500/20",
     },
     {
-      title: "Phân tích & Tìm lỗi (Debug)",
-      description: "Dán đoạn code lỗi của bạn vào, hệ thống sẽ chỉ ra nguyên nhân và giải thích cặn kẽ tại sao lại xảy ra lỗi đó.",
-      icon: <Bug className="h-10 w-10 text-red-500 mb-4" />
+      titleKey: "feature2.title",
+      descKey: "feature2.desc",
+      icon: <Shield className="h-8 w-8 text-purple-400" />,
+      gradient: "from-purple-500/20 to-pink-500/10",
+      borderColor: "border-purple-500/20",
     },
     {
-      title: "Theo dõi tiến độ học tập",
-      description: "Hệ thống lưu lại lịch sử các phiên hỏi đáp, giúp bạn ôn tập lại kiến thức và theo dõi sự tiến bộ của bản thân.",
-      icon: <LineChart className="h-10 w-10 text-green-500 mb-4" />
-    }
+      titleKey: "feature3.title",
+      descKey: "feature3.desc",
+      icon: <Zap className="h-8 w-8 text-amber-400" />,
+      gradient: "from-amber-500/20 to-orange-500/10",
+      borderColor: "border-amber-500/20",
+    },
   ];
 
   return (
-    <section id="features" className="w-full py-20 bg-background">
-      <div className="container px-4 md:px-8">
+    <section id="features" className="w-full py-20 relative cosmic-bg">
+      <div className="container px-4 md:px-8 relative z-10">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">Tính năng nổi bật</h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Mọi công cụ bạn cần để nâng cao kỹ năng lập trình và phát triển tư duy logic.
+          <h2
+            className="text-3xl font-bold tracking-tight sm:text-4xl mb-4 text-white"
+            style={{ fontFamily: "Outfit, Inter, sans-serif" }}
+          >
+            {t("features.title")}
+          </h2>
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+            {t("features.subtitle")}
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {features.map((feature, index) => (
-            <Card key={index} className="border-none shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader>
+            <div
+              key={index}
+              className={`glass-card p-6 rounded-2xl border ${feature.borderColor} group hover:-translate-y-2 transition-all duration-300 hover:shadow-lg`}
+            >
+              <div
+                className={`mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br ${feature.gradient}`}
+              >
                 {feature.icon}
-                <CardTitle className="text-xl">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base leading-relaxed">
-                  {feature.description}
-                </CardDescription>
-              </CardContent>
-            </Card>
+              </div>
+              <h3
+                className="text-lg font-bold text-white mb-3"
+                style={{ fontFamily: "Outfit, Inter, sans-serif" }}
+              >
+                {t(feature.titleKey)}
+              </h3>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                {t(feature.descKey)}
+              </p>
+            </div>
           ))}
         </div>
       </div>
+
+      {/* Decorative gradient */}
+      <div className="absolute top-1/2 left-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
     </section>
   );
 }

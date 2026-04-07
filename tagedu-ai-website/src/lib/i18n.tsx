@@ -1,0 +1,536 @@
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+
+export type Language = "vi" | "en";
+
+interface Translations {
+  [key: string]: string;
+}
+
+const translations: Record<Language, Translations> = {
+  en: {
+    // NavBar
+    "nav.home": "HOME",
+    "nav.missionMap": "MISSION MAP",
+    "nav.progress": "PROGRESS",
+    "nav.settings": "SETTINGS",
+    "nav.login": "Login",
+    "nav.logout": "Logout",
+    "nav.admin": "Admin",
+    "nav.confirmLogoutTitle": "Confirm Logout",
+    "nav.confirmLogoutMsg": "Are you sure you want to log out of TagEdu?",
+    "nav.cancel": "Cancel",
+
+    // Hero
+    "hero.title1": "COSMIC",
+    "hero.title2": "ADVENTURE",
+    "hero.subtitle": "Chart your course through the syntax nebula and master the elements of code.",
+    "hero.mascotMsg": "Commander, the Asteroid Belt looks tricky today! Are you ready to loop around them?",
+
+    // Mission Cards
+    "mission.completed": "COMPLETED",
+    "mission.active": "ACTIVE MISSION",
+    "mission.locked": "LOCKED AREA",
+    "mission.continue": "Continue Mission",
+    "mission.retry": "Retry Mission",
+    "mission.start": "Start Mission",
+    "mission.requiresLevel": "Requires Level 5 Navigation Clearance.",
+    "mission.comingSoon": "🚧 Mission is still under construction. Stay tuned!",
+
+    // Mission 1 - Galactic Variables
+    "mission1.title": "Galactic Variables",
+    "mission1.desc": "Mastered the art of storing cosmic energy in containers.",
+
+    // Mission 2 - Looping Through the Asteroids
+    "mission2.title": "Looping Through the Asteroids",
+    "mission2.desc": "Navigation protocols require repetitive circular patterns. Learn the Power of Loops!",
+
+    // Mission 3 - Conditional Comets
+    "mission3.title": "Conditional Comets",
+    "mission3.desc": "Decisions at the speed of light.",
+
+    // Features
+    "features.title": "Core Systems",
+    "features.subtitle": "Advanced tools to boost your coding skills and develop logical thinking.",
+    "feature1.title": "Guided Thinking",
+    "feature1.desc": "Instead of giving complete code, AI asks guiding questions to help you find optimal solutions step by step.",
+    "feature2.title": "Debug & Analyze",
+    "feature2.desc": "Paste your buggy code, the system will identify the cause and explain in detail why the error occurs.",
+    "feature3.title": "Track Progress",
+    "feature3.desc": "The system saves your Q&A session history, helping you review knowledge and track your improvement.",
+
+    // Footer
+    "footer.rights": "All rights reserved.",
+    "footer.terms": "Terms of Service",
+    "footer.privacy": "Privacy Policy",
+
+    // Progress Page
+    "progress.title": "Mission Progress",
+    "progress.subtitle": "Track your journey through the cosmic coding adventure.",
+    "progress.totalMissions": "Total Missions",
+    "progress.completedMissions": "Completed",
+    "progress.activeMissions": "In Progress",
+    "progress.lockedMissions": "Locked",
+    "progress.recentActivity": "Recent Activity",
+    "progress.noActivity": "No activity yet. Start your first mission!",
+    "progress.overallProgress": "Overall Progress",
+
+    // Settings Page
+    "settings.title": "Command Center Settings",
+    "settings.subtitle": "Configure your cosmic learning experience.",
+    "settings.language": "Language",
+    "settings.languageDesc": "Choose your preferred language for the interface.",
+    "settings.theme": "Theme",
+    "settings.themeDesc": "Customize the appearance of your dashboard.",
+    "settings.darkMode": "Dark Mode",
+    "settings.notifications": "Notifications",
+    "settings.notificationsDesc": "Manage your notification preferences.",
+    "settings.emailNotif": "Email Notifications",
+    "settings.pushNotif": "Push Notifications",
+    "settings.account": "Account",
+    "settings.accountDesc": "Manage your account settings.",
+    "settings.saved": "Settings saved!",
+
+    // Auth Modal
+    "auth.welcomeBack": "Welcome Back!",
+    "auth.createAccount": "Create New Account",
+    "auth.resetPassword": "Reset Password",
+    "auth.loginSubtitle": "Sign in to save your learning progress.",
+    "auth.forgotSubtitle": "Enter your email to receive a verification code (OTP).",
+    "auth.emailPlaceholder": "Email Address",
+    "auth.passwordPlaceholder": "Password (at least 6 characters)",
+    "auth.fullNamePlaceholder": "Full Name",
+    "auth.otpPlaceholder": "Enter OTP (6 digits)",
+    "auth.newPasswordPlaceholder": "New password (at least 6 characters)",
+    "auth.forgotPassword": "Forgot password?",
+    "auth.loginBtn": "Sign In",
+    "auth.registerBtn": "Create Account",
+    "auth.sendOtp": "Send OTP",
+    "auth.changePasswordBtn": "Change Password",
+    "auth.or": "or",
+    "auth.loginWithGoogle": "Sign in with Google",
+    "auth.noAccount": "Don't have an account? ",
+    "auth.hasAccount": "Already have an account? ",
+    "auth.registerNow": "Register now",
+    "auth.loginHere": "Login here",
+    "auth.backToLogin": "Back to login",
+    "auth.registerSuccess": "Registration successful! Redirecting to login...",
+    "auth.otpSent": "OTP has been sent to your email!",
+    "auth.passwordChanged": "Password changed successfully! Redirecting to login...",
+    "auth.googleFailed": "Google login failed",
+    "auth.error": "An error occurred",
+
+    // Profile Modal
+    "profile.title": "Personal Profile",
+    "profile.subtitle": "Update your account information and security.",
+    "profile.infoTab": "Info",
+    "profile.passwordTab": "Change Password",
+    "profile.emailLabel": "Email Address (ID)",
+    "profile.displayName": "Display Name",
+    "profile.displayNamePlaceholder": "Full Name",
+    "profile.bioLabel": "Short Bio",
+    "profile.bioPlaceholder": "Write a few lines about yourself or your learning goals...",
+    "profile.bioHint": "✨ TagEdu AI will read this to personalize answers for you.",
+    "profile.saveChanges": "Save Changes",
+    "profile.currentPassword": "Current Password",
+    "profile.newPassword": "New Password",
+    "profile.confirmPassword": "Confirm New Password",
+    "profile.profileUpdated": "Profile updated successfully!",
+    "profile.passwordChanged": "Password changed successfully!",
+    "profile.fillAll": "Please fill in all password fields.",
+    "profile.passwordMismatch": "Passwords do not match.",
+    "profile.passwordMinLength": "New password must be at least 6 characters.",
+
+    // Challenge 7
+    "c7.title": "Challenge 1: Software Classification",
+    "c7.desc": "Drag each software into its correct category.",
+    "c7.sys": "System Software",
+    "c7.util": "Utility Software",
+    "c7.app": "Application Software",
+    "c7.success": "🎉 Perfect! You have classified all software correctly!",
+    "c7.retry": "🔄 Retry now",
+    "c7.home": "Back to Home",
+    "c7.os": "OS",
+    "c7.driver": "Driver",
+    "c7.antivirus": "Antivirus",
+    "c7.backup": "Backup",
+    "c7.browser": "Browser",
+    "c7.word": "Word",
+    "c7.spotify": "Spotify",
+    "c7.email": "Email",
+
+    // Challenge 8
+    "c8.title": "Challenge 2: Software Functions",
+    "c8.desc": "Select the appropriate software for the required function.",
+    "c8.qNum": "Question",
+    "c8.success": "🎉 Excellent! All software installed!",
+    "c8.appName.Radar": "Radar",
+    "c8.appName.Calculator": "Calculator",
+    "c8.appName.Map": "Map",
+    "c8.appName.Camera": "Camera",
+    "c8.appName.Security": "Security",
+    "c8.appName.Temperature": "Temperature",
+    "c8.q1": "This ship needs an obstacle sensing software to avoid collisions in space.",
+    "c8.q2": "The crew needs software to accurately calculate flight trajectories.",
+    "c8.q3": "The spacecraft needs positioning and navigation software between planets.",
+    "c8.q4": "The research team needs software to record images of planetary surfaces.",
+    "c8.q5": "The ship's system needs software to continuously monitor engine temperatures.",
+
+    // Chatbot Widget
+    "chat.subtitle": "Learning Assistant",
+    "chat.notLoggedIn": "Not logged in",
+    "chat.clearTitle": "Delete chat history",
+    "chat.quickLabel": "QUICK SUGGESTIONS",
+    "chat.placeholder": "Ask a question here... (Enter to send)",
+    "chat.placeholderGuest": "Please log in to chat...",
+    "chat.disclaimer": "TagEdu AI only guides your thinking, never solves for you.",
+    "chat.clearModalTitle": "Delete conversation?",
+    "chat.clearModalMsg": "All message history will be permanently deleted and cannot be recovered.",
+    "chat.clearCancel": "Cancel",
+    "chat.clearConfirm": "Delete now",
+    "chat.welcomeDefault": "Hi {name}! I'm the TagEdu Learning Assistant. How can I help you?",
+    "chat.welcomeChallenge7": "Hi {name}! I see you're on Challenge 1: Software Classification. Need any hints?",
+    "chat.welcomeChallenge8": "Hi {name}! I see you're on Challenge 2: Spacecraft Software. Tell me your reasoning!",
+    "chat.guestWelcome": "Hi there! I'm the TagEdu Learning Assistant. Please **Log in** at the top right to start chatting and get learning suggestions! 👋",
+    "chat.sessionExpired": "⚠️ Your session has expired. Please log in again to view chat history.",
+    "chat.errorOverload": "⚠️ There are too many students asking questions right now. Please wait a moment and try again! 🥺",
+    "chat.clearError": "An error occurred or you do not have permission to delete this conversation.",
+    "chat.clearNetworkError": "Unable to connect to the server to delete chat.",
+    "chat.qr.default1": "What is TagEdu?",
+    "chat.qr.default2": "How do I start learning?",
+    "chat.qr.default3": "How does AI help?",
+    "chat.qr.c7_1": "Hints on classification",
+    "chat.qr.c7_2": "System vs Utility software?",
+    "chat.qr.c7_3": "Give me an example",
+    "chat.qr.c8_1": "Where to start analyzing?",
+    "chat.qr.c8_2": "What is system software here?",
+    "chat.qr.c8_3": "Suggest a test scenario",
+
+    // Admin Dashboard
+    "admin.title": "Admin Dashboard",
+    "admin.totalStudents": "Total Students",
+    "admin.totalMessages": "Total Messages (from Students)",
+    "admin.accountManagement": "Account Management",
+    "admin.searchPlaceholder": "Search name or email...",
+    "admin.colId": "ID",
+    "admin.colName": "Display Name",
+    "admin.colEmail": "Email",
+    "admin.colRole": "Role",
+    "admin.colMessages": "Messages",
+    "admin.colProgress": "Progress",
+    "admin.colActions": "Actions",
+    "admin.viewChatHistory": "View AI chat history of {name}",
+    "admin.deleteAccount": "Delete this account",
+    "admin.showing": "Showing",
+    "admin.of": "of",
+    "admin.accounts": "accounts",
+    "admin.messages": "messages",
+    "admin.challenges": "challenges",
+    "admin.chatHistoryOf": "History of:",
+    "admin.tabHome": "\uD83C\uDFE0 Home",
+    "admin.tabChallenge1": "\uD83E\uDDE9 Challenge 1",
+    "admin.tabChallenge2": "\uD83D\uDE80 Challenge 2",
+    "admin.searchMessages": "Search messages...",
+    "admin.loadingHistory": "Loading chat history...",
+    "admin.noResults": "No results for \"{query}\"",
+    "admin.noMessages": "No messages in this section.",
+    "admin.tryOtherKeyword": "Try a different keyword.",
+    "admin.studentNotChatted": "Student hasn't chatted with AI at {tab}.",
+    "admin.feedbackHelpful": "Helpful",
+    "admin.feedbackNotHelpful": "Not helpful",
+    "admin.deleteUserTitle": "Permanently delete account?",
+    "admin.deleteUserMsg1": "Are you sure you want to delete user",
+    "admin.deleteUserMsg2": "All data and chat history of this account will be permanently deleted and cannot be recovered.",
+    "admin.cancelBtn": "Cancel",
+    "admin.deletingBtn": "Deleting...",
+    "admin.confirmDeleteBtn": "Yes, delete now!",
+    "admin.loadError": "An error occurred while loading admin data.",
+    "admin.chatLogError": "An error occurred while loading chat history.",
+    "admin.chatLogNetworkError": "Server connection error while loading chat history.",
+    "admin.deleteError": "An error occurred while deleting.",
+    "admin.deleteNetworkError": "Server connection error.",
+  },
+  vi: {
+    // NavBar
+    "nav.home": "TRANG CHỦ",
+    "nav.missionMap": "BẢN ĐỒ NHIỆM VỤ",
+    "nav.progress": "TIẾN ĐỘ",
+    "nav.settings": "CÀI ĐẶT",
+    "nav.login": "Đăng nhập",
+    "nav.logout": "Đăng xuất",
+    "nav.admin": "Quản trị",
+    "nav.confirmLogoutTitle": "Xác nhận đăng xuất",
+    "nav.confirmLogoutMsg": "Bạn có chắc chắn muốn đăng xuất khỏi hệ thống TagEdu không?",
+    "nav.cancel": "Hủy bỏ",
+
+    // Hero
+    "hero.title1": "CUỘC PHIÊU LƯU",
+    "hero.title2": "VŨ TRỤ",
+    "hero.subtitle": "Vạch đường đi qua tinh vân cú pháp và làm chủ các yếu tố của code.",
+    "hero.mascotMsg": "Chỉ huy ơi, Vành đai Tiểu hành tinh hôm nay trông khó đấy! Bạn đã sẵn sàng lượn quanh chúng chưa?",
+
+    // Mission Cards
+    "mission.completed": "HOÀN THÀNH",
+    "mission.active": "NHIỆM VỤ ĐANG HOẠT ĐỘNG",
+    "mission.locked": "KHU VỰC BỊ KHÓA",
+    "mission.continue": "Tiếp tục Nhiệm vụ",
+    "mission.retry": "Làm lại Nhiệm vụ",
+    "mission.start": "Bắt đầu Nhiệm vụ",
+    "mission.requiresLevel": "Yêu cầu Cấp độ 5 Chứng nhận Điều hướng.",
+    "mission.comingSoon": "🚧 Nhiệm vụ vẫn đang được phát triển. Vui lòng quay lại sau!",
+
+    // Mission 1
+    "mission1.title": "Biến Thiên Hà",
+    "mission1.desc": "Thành thạo nghệ thuật lưu trữ năng lượng vũ trụ trong các container.",
+
+    // Mission 2
+    "mission2.title": "Lượn Qua Tiểu Hành Tinh",
+    "mission2.desc": "Giao thức điều hướng yêu cầu các mẫu lặp vòng tròn. Hãy học Sức mạnh của Vòng lặp!",
+
+    // Mission 3
+    "mission3.title": "Sao Chổi Điều Kiện",
+    "mission3.desc": "Quyết định với tốc độ ánh sáng.",
+
+    // Features
+    "features.title": "Hệ thống Cốt lõi",
+    "features.subtitle": "Công cụ tiên tiến để nâng cao kỹ năng lập trình và phát triển tư duy logic.",
+    "feature1.title": "Gợi ý Tư duy",
+    "feature1.desc": "Thay vì đưa ra code hoàn chỉnh, AI sẽ đặt câu hỏi gợi mở, hướng dẫn bạn từng bước tìm ra giải pháp tối ưu.",
+    "feature2.title": "Phân tích & Debug",
+    "feature2.desc": "Dán đoạn code lỗi, hệ thống sẽ chỉ ra nguyên nhân và giải thích cặn kẽ tại sao lỗi xảy ra.",
+    "feature3.title": "Theo dõi Tiến độ",
+    "feature3.desc": "Hệ thống lưu lại lịch sử phiên hỏi đáp, giúp bạn ôn tập kiến thức và theo dõi sự tiến bộ.",
+
+    // Footer
+    "footer.rights": "Đã đăng ký bản quyền.",
+    "footer.terms": "Điều khoản dịch vụ",
+    "footer.privacy": "Chính sách bảo mật",
+
+    // Progress Page
+    "progress.title": "Tiến độ Nhiệm vụ",
+    "progress.subtitle": "Theo dõi hành trình qua cuộc phiêu lưu code vũ trụ.",
+    "progress.totalMissions": "Tổng Nhiệm vụ",
+    "progress.completedMissions": "Hoàn thành",
+    "progress.activeMissions": "Đang thực hiện",
+    "progress.lockedMissions": "Bị khóa",
+    "progress.recentActivity": "Hoạt động Gần đây",
+    "progress.noActivity": "Chưa có hoạt động nào. Bắt đầu nhiệm vụ đầu tiên!",
+    "progress.overallProgress": "Tiến độ Tổng thể",
+
+    // Settings Page
+    "settings.title": "Cài đặt Trung tâm Chỉ huy",
+    "settings.subtitle": "Tùy chỉnh trải nghiệm học tập vũ trụ của bạn.",
+    "settings.language": "Ngôn ngữ",
+    "settings.languageDesc": "Chọn ngôn ngữ hiển thị giao diện.",
+    "settings.theme": "Giao diện",
+    "settings.themeDesc": "Tùy chỉnh giao diện bảng điều khiển.",
+    "settings.darkMode": "Chế độ Tối",
+    "settings.notifications": "Thông báo",
+    "settings.notificationsDesc": "Quản lý tùy chọn thông báo.",
+    "settings.emailNotif": "Thông báo Email",
+    "settings.pushNotif": "Thông báo đẩy",
+    "settings.account": "Tài khoản",
+    "settings.accountDesc": "Quản lý cài đặt tài khoản.",
+    "settings.saved": "Đã lưu cài đặt!",
+
+    // Auth Modal
+    "auth.welcomeBack": "Chào mừng trở lại!",
+    "auth.createAccount": "Tạo tài khoản mới",
+    "auth.resetPassword": "Khôi phục mật khẩu",
+    "auth.loginSubtitle": "Đăng nhập để lưu trữ quá trình học tập của bạn.",
+    "auth.forgotSubtitle": "Nhập email của bạn để nhận mã xác nhận (OTP).",
+    "auth.emailPlaceholder": "Địa chỉ Email",
+    "auth.passwordPlaceholder": "Mật khẩu (ít nhất 6 ký tự)",
+    "auth.fullNamePlaceholder": "Họ và tên",
+    "auth.otpPlaceholder": "Nhập mã OTP (6 số)",
+    "auth.newPasswordPlaceholder": "Mật khẩu mới (ít nhất 6 ký tự)",
+    "auth.forgotPassword": "Quên mật khẩu?",
+    "auth.loginBtn": "Đăng nhập",
+    "auth.registerBtn": "Đăng ký tài khoản",
+    "auth.sendOtp": "Gửi mã OTP",
+    "auth.changePasswordBtn": "Đổi mật khẩu",
+    "auth.or": "hoặc",
+    "auth.loginWithGoogle": "Đăng nhập bằng Google",
+    "auth.noAccount": "Chưa có tài khoản? ",
+    "auth.hasAccount": "Đã có tài khoản? ",
+    "auth.registerNow": "Đăng ký ngay",
+    "auth.loginHere": "Đăng nhập tại đây",
+    "auth.backToLogin": "Quay lại đăng nhập",
+    "auth.registerSuccess": "Đăng ký thành công! Đang chuyển sang đăng nhập...",
+    "auth.otpSent": "Mã OTP đã được gửi đến email của bạn!",
+    "auth.passwordChanged": "Đổi mật khẩu thành công! Đang chuyển về đăng nhập...",
+    "auth.googleFailed": "Đăng nhập Google thất bại",
+    "auth.error": "Có lỗi xảy ra",
+
+    // Profile Modal
+    "profile.title": "Hồ sơ cá nhân",
+    "profile.subtitle": "Cập nhật thông tin và bảo mật tài khoản của bạn.",
+    "profile.infoTab": "Thông tin",
+    "profile.passwordTab": "Đổi mật khẩu",
+    "profile.emailLabel": "Địa chỉ Email (Định danh)",
+    "profile.displayName": "Tên hiển thị",
+    "profile.displayNamePlaceholder": "Họ và tên",
+    "profile.bioLabel": "Đoạn giới thiệu bản thân ngắn (Bio)",
+    "profile.bioPlaceholder": "Hãy viết một vài dòng giới thiệu về bản thân hoặc mục tiêu học tập của bạn...",
+    "profile.bioHint": "✨ TagEdu AI sẽ đọc phần này để cá nhân hóa câu trả lời tốt hơn cho bạn.",
+    "profile.saveChanges": "Lưu thay đổi",
+    "profile.currentPassword": "Mật khẩu hiện tại",
+    "profile.newPassword": "Mật khẩu mới",
+    "profile.confirmPassword": "Xác nhận mật khẩu mới",
+    "profile.profileUpdated": "Đã cập nhật hồ sơ thành công!",
+    "profile.passwordChanged": "Đổi mật khẩu thành công!",
+    "profile.fillAll": "Vui lòng điền đầy đủ thông tin mật khẩu.",
+    "profile.passwordMismatch": "Mật khẩu xác nhận không khớp.",
+    "profile.passwordMinLength": "Mật khẩu mới phải có ít nhất 6 ký tự.",
+
+    // Challenge 7
+    "c7.title": "Thử thách 1: Phân loại phần mềm",
+    "c7.desc": "Kéo mỗi phần mềm vào đúng loại của nó.",
+    "c7.sys": "Phần mềm Hệ thống",
+    "c7.util": "Phần mềm Tiện ích",
+    "c7.app": "Phần mềm Ứng dụng",
+    "c7.success": "🎉 Hoàn hảo! Bạn đã phân loại đúng tất cả phần mềm!",
+    "c7.retry": "🔄 Làm lại ngay",
+    "c7.home": "Về trang chủ",
+    "c7.os": "OS",
+    "c7.driver": "Driver",
+    "c7.antivirus": "Antivirus",
+    "c7.backup": "Backup",
+    "c7.browser": "Browser",
+    "c7.word": "Word",
+    "c7.spotify": "Spotify",
+    "c7.email": "Email",
+
+    // Challenge 8
+    "c8.title": "Thử thách 2: Chức năng phần mềm",
+    "c8.desc": "Chọn phần mềm phù hợp với chức năng được yêu cầu.",
+    "c8.qNum": "Câu",
+    "c8.success": "🎉 Tuyệt vời! Tất cả phần mềm đã được cài đặt!",
+    "c8.appName.Radar": "Radar",
+    "c8.appName.Calculator": "Máy tính",
+    "c8.appName.Map": "Bản đồ",
+    "c8.appName.Camera": "Camera",
+    "c8.appName.Security": "Bảo mật",
+    "c8.appName.Temperature": "Nhiệt độ",
+    "c8.q1": "Con tàu này cần phần mềm cảm ứng chướng ngại vật để tránh va chạm trong không gian.",
+    "c8.q2": "Phi hành đoàn cần phần mềm tính toán quỹ đạo bay chính xác.",
+    "c8.q3": "Tàu vũ trụ cần phần mềm định vị và dẫn đường giữa các hành tinh.",
+    "c8.q4": "Đội nghiên cứu cần phần mềm ghi lại hình ảnh bề mặt các hành tinh.",
+    "c8.q5": "Hệ thống tàu cần phần mềm giám sát nhiệt độ động cơ liên tục.",
+
+    // Chatbot Widget
+    "chat.subtitle": "Trợ lý hỗ trợ học tập",
+    "chat.notLoggedIn": "Chưa đăng nhập",
+    "chat.clearTitle": "Xóa lịch sử chat",
+    "chat.quickLabel": "GỢI Ý NHANH",
+    "chat.placeholder": "Hỏi gợi ý tại đây... (Enter để gửi)",
+    "chat.placeholderGuest": "Vui lòng đăng nhập để chat...",
+    "chat.disclaimer": "TagEdu AI chỉ định hướng tư duy, tuyệt đối không giải hộ.",
+    "chat.clearModalTitle": "Xóa cuộc trò chuyện?",
+    "chat.clearModalMsg": "Toàn bộ lịch sử tin nhắn sẽ bị xóa vĩnh viễn và không thể khôi phục.",
+    "chat.clearCancel": "Hủy bỏ",
+    "chat.clearConfirm": "Xóa ngay",
+    "chat.welcomeDefault": "Chào {name}! Mình là Trợ lý học tập TagEdu. Bạn cần hỗ trợ gì không?",
+    "chat.welcomeChallenge7": "Chào {name}! Mình thấy bạn đang làm Thử thách 1: Phân loại phần mềm. Bạn cần gợi ý gì không?",
+    "chat.welcomeChallenge8": "Chào {name}! Mình thấy bạn đang ở Thử thách 2: Phần mềm Tàu vũ trụ. Hãy nói suy luận của bạn nhé!",
+    "chat.guestWelcome": "Chào bạn! Mình là Trợ lý học tập TagEdu. Vui lòng **Đăng nhập** ở góc trên cùng để bắt đầu trò chuyện và nhận gợi ý học tập nhé! 👋",
+    "chat.sessionExpired": "⚠️ Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại để xem lịch sử chat.",
+    "chat.errorOverload": "⚠️ Hiện tại có quá nhiều học viên đang đặt câu hỏi nên hệ thống hơi quá tải. Bạn vui lòng đợi một chút rồi thử lại nhé! 🥺",
+    "chat.clearError": "Có lỗi xảy ra hoặc bạn không có quyền xóa cuộc trò chuyện này.",
+    "chat.clearNetworkError": "Không thể kết nối đến máy chủ để xóa chat.",
+    "chat.qr.default1": "TagEdu là gì?",
+    "chat.qr.default2": "Làm sao để bắt đầu học?",
+    "chat.qr.default3": "AI hỗ trợ như thế nào?",
+    "chat.qr.c7_1": "Gợi ý cách phân loại",
+    "chat.qr.c7_2": "Hệ thống và Tiện ích khác gì nhau?",
+    "chat.qr.c7_3": "Cho mình xin một ví dụ",
+    "chat.qr.c8_1": "Bắt đầu phân tích từ đâu?",
+    "chat.qr.c8_2": "Phần mềm hệ thống ở đây là gì?",
+    "chat.qr.c8_3": "Gợi ý kịch bản kiểm thử",
+
+    // Admin Dashboard
+    "admin.title": "Bảng điều khiển Quản trị",
+    "admin.totalStudents": "Tổng số Học viên",
+    "admin.totalMessages": "Tổng tin nhắn (Học viên gửi)",
+    "admin.accountManagement": "Quản lý Tài khoản",
+    "admin.searchPlaceholder": "Tìm tên hoặc email...",
+    "admin.colId": "ID",
+    "admin.colName": "Tên hiển thị",
+    "admin.colEmail": "Email",
+    "admin.colRole": "Vai trò",
+    "admin.colMessages": "Tin nhắn",
+    "admin.colProgress": "Tiến độ",
+    "admin.colActions": "Hành động",
+    "admin.viewChatHistory": "Xem lịch sử chat AI của {name}",
+    "admin.deleteAccount": "Xóa tài khoản này",
+    "admin.showing": "Hiển thị",
+    "admin.of": "/",
+    "admin.accounts": "tài khoản",
+    "admin.messages": "tin nhắn",
+    "admin.challenges": "thử thách",
+    "admin.chatHistoryOf": "Lịch sử của:",
+    "admin.tabHome": "\uD83C\uDFE0 Trang chủ",
+    "admin.tabChallenge1": "\uD83E\uDDE9 Thử thách 1",
+    "admin.tabChallenge2": "\uD83D\uDE80 Thử thách 2",
+    "admin.searchMessages": "Tìm kiếm tin nhắn...",
+    "admin.loadingHistory": "Đang tải lịch sử hội thoại...",
+    "admin.noResults": "Không tìm thấy \"{query}\"",
+    "admin.noMessages": "Chưa có tin nhắn nào ở mục này.",
+    "admin.tryOtherKeyword": "Thử từ khóa khác nhé.",
+    "admin.studentNotChatted": "Học viên chưa chat với AI tại {tab}.",
+    "admin.feedbackHelpful": "Hữu ích",
+    "admin.feedbackNotHelpful": "Chưa hữu ích",
+    "admin.deleteUserTitle": "Xóa vĩnh viễn tài khoản?",
+    "admin.deleteUserMsg1": "Bạn có chắc chắn muốn xóa người dùng",
+    "admin.deleteUserMsg2": "Toàn bộ dữ liệu và lịch sử trò chuyện của tài khoản này sẽ bị xóa sạch và không thể khôi phục.",
+    "admin.cancelBtn": "Hủy bỏ",
+    "admin.deletingBtn": "Đang xóa...",
+    "admin.confirmDeleteBtn": "Vâng, xóa ngay!",
+    "admin.loadError": "Có lỗi xảy ra khi tải dữ liệu quản trị.",
+    "admin.chatLogError": "Có lỗi xảy ra khi lấy lịch sử chat.",
+    "admin.chatLogNetworkError": "Lỗi kết nối server khi tải lịch sử chat.",
+    "admin.deleteError": "Có lỗi xảy ra khi xóa.",
+    "admin.deleteNetworkError": "Lỗi kết nối server.",
+  },
+};
+
+interface I18nContextType {
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: (key: string) => string;
+}
+
+const I18nContext = createContext<I18nContextType>({
+  language: "en",
+  setLanguage: () => {},
+  t: (key) => key,
+});
+
+export function I18nProvider({ children }: { children: ReactNode }) {
+  const [language, setLanguageState] = useState<Language>(() => {
+    const saved = localStorage.getItem("tagedu_language");
+    return (saved as Language) || "en";
+  });
+
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem("tagedu_language", lang);
+  };
+
+  const t = (key: string): string => {
+    return translations[language][key] || key;
+  };
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
+  return (
+    <I18nContext.Provider value={{ language, setLanguage, t }}>
+      {children}
+    </I18nContext.Provider>
+  );
+}
+
+export function useI18n() {
+  return useContext(I18nContext);
+}

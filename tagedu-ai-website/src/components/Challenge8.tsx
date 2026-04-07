@@ -2,44 +2,45 @@ import { useState, useEffect } from "react";
 import { Radar, Calculator, Map, Camera, ShieldCheck, Thermometer } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 interface Question {
-  scenario: string;
-  correctApp: string;
+  scenarioKey: string;
+  correctAppNameKey: string;
 }
 
 const QUESTIONS: Question[] = [
   {
-    scenario: "Con tàu này cần phần mềm cảm ứng chướng ngại vật để tránh va chạm trong không gian.",
-    correctApp: "Radar",
+    scenarioKey: "c8.q1",
+    correctAppNameKey: "c8.appName.Radar",
   },
   {
-    scenario: "Phi hành đoàn cần phần mềm tính toán quỹ đạo bay chính xác.",
-    correctApp: "Máy tính",
+    scenarioKey: "c8.q2",
+    correctAppNameKey: "c8.appName.Calculator",
   },
   {
-    scenario: "Tàu vũ trụ cần phần mềm định vị và dẫn đường giữa các hành tinh.",
-    correctApp: "Bản đồ",
+    scenarioKey: "c8.q3",
+    correctAppNameKey: "c8.appName.Map",
   },
   {
-    scenario: "Đội nghiên cứu cần phần mềm ghi lại hình ảnh bề mặt các hành tinh.",
-    correctApp: "Camera",
+    scenarioKey: "c8.q4",
+    correctAppNameKey: "c8.appName.Camera",
   },
   {
-    scenario: "Hệ thống tàu cần phần mềm giám sát nhiệt độ động cơ liên tục.",
-    correctApp: "Nhiệt độ",
+    scenarioKey: "c8.q5",
+    correctAppNameKey: "c8.appName.Temperature",
   },
 ];
 
 const APPS = [
-  { name: "Radar", icon: Radar },
-  { name: "Máy tính", icon: Calculator },
-  { name: "Bản đồ", icon: Map },
-  { name: "Camera", icon: Camera },
-  { name: "Bảo mật", icon: ShieldCheck },
-  { name: "Nhiệt độ", icon: Thermometer },
+  { nameKey: "c8.appName.Radar", icon: Radar },
+  { nameKey: "c8.appName.Calculator", icon: Calculator },
+  { nameKey: "c8.appName.Map", icon: Map },
+  { nameKey: "c8.appName.Camera", icon: Camera },
+  { nameKey: "c8.appName.Security", icon: ShieldCheck },
+  { nameKey: "c8.appName.Temperature", icon: Thermometer },
 ];
 
 interface ChallengeProps {
@@ -47,6 +48,7 @@ interface ChallengeProps {
 }
 
 const Challenge8 = ({ onNavigate }: ChallengeProps) => {
+  const { t } = useI18n();
   const [currentQ, setCurrentQ] = useState(0);
   const [shakeApp, setShakeApp] = useState<string | null>(null);
   const [correctApp, setCorrectApp] = useState<string | null>(null);
@@ -80,11 +82,11 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
     }
   }, [completed]);
 
-  const handleChoice = (appName: string) => {
+  const handleChoice = (appNameKey: string) => {
     if (correctApp) return; // already answered
 
-    if (appName === QUESTIONS[currentQ].correctApp) {
-      setCorrectApp(appName);
+    if (appNameKey === QUESTIONS[currentQ].correctAppNameKey) {
+      setCorrectApp(appNameKey);
       setTimeout(() => {
         if (currentQ + 1 >= QUESTIONS.length) {
           setCompleted(true);
@@ -94,7 +96,7 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
         }
       }, 800);
     } else {
-      setShakeApp(appName);
+      setShakeApp(appNameKey);
       setTimeout(() => setShakeApp(null), 400);
     }
   };
@@ -110,10 +112,10 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h2 className="mb-1 text-xl font-bold text-foreground sm:text-2xl">
-        Thử thách 2: Chức năng phần mềm
+        {t("c8.title")}
       </h2>
       <p className="mb-4 text-sm text-muted-foreground">
-        Chọn phần mềm phù hợp với chức năng được yêu cầu.
+        {t("c8.desc")}
       </p>
 
       <Progress value={completed ? 100 : progress} className="mb-8 h-2.5" />
@@ -121,15 +123,15 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
       {completed ? (
         <div className="flex flex-col items-center justify-center gap-6 rounded-xl border border-success bg-success/5 p-8 text-center">
           <p className="text-xl font-semibold text-success">
-            🎉 Tuyệt vời! Tất cả phần mềm đã được cài đặt!
+            {t("c8.success")}
           </p>
           {/* [MỚI] Thêm nút Làm lại ngay */}
           <div className="flex gap-4">
             <Button onClick={handleReplay} variant="outline" size="lg">
-              🔄 Làm lại ngay
+              {t("c7.retry")}
             </Button>
             <Button onClick={() => onNavigate("landing")} size="lg">
-              Về trang chủ
+              {t("c7.home")}
             </Button>
           </div>
         </div>
@@ -138,10 +140,10 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
           {/* Question box */}
           <div className="mb-8 rounded-xl border-2 border-primary/20 bg-primary/5 p-6">
             <p className="text-sm font-medium text-muted-foreground">
-              Câu {currentQ + 1} / {QUESTIONS.length}
+              {t("c8.qNum")} {currentQ + 1} / {QUESTIONS.length}
             </p>
             <p className="mt-2 text-lg font-semibold leading-relaxed text-foreground">
-              {QUESTIONS[currentQ].scenario}
+              {t(QUESTIONS[currentQ].scenarioKey)}
             </p>
           </div>
 
@@ -149,14 +151,14 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {APPS.map((app) => {
               const Icon = app.icon;
-              const isCorrect = correctApp === app.name;
-              const isShaking = shakeApp === app.name;
+              const isCorrect = correctApp === app.nameKey;
+              const isShaking = shakeApp === app.nameKey;
 
               return (
                 <Button
-                  key={app.name}
+                  key={app.nameKey}
                   variant="outline"
-                  onClick={() => handleChoice(app.name)}
+                  onClick={() => handleChoice(app.nameKey)}
                   className={`h-auto flex-col gap-2 py-5 text-base font-medium transition-all ${
                     isCorrect
                       ? "border-success bg-success/10 text-success hover:bg-success/10 hover:text-success"
@@ -166,7 +168,7 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
                   }`}
                 >
                   <Icon className="h-6 w-6" />
-                  {app.name}
+                  {t(app.nameKey)}
                 </Button>
               );
             })}

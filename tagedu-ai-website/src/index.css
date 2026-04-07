@@ -4,47 +4,56 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    /* ── Cosmic Dark Theme ── */
+    --background: 222 47% 6%;
+    --foreground: 210 40% 95%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 222 40% 10%;
+    --card-foreground: 210 40% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 222 40% 10%;
+    --popover-foreground: 210 40% 95%;
 
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 190 100% 50%;
+    --primary-foreground: 222 47% 6%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 222 30% 16%;
+    --secondary-foreground: 210 40% 90%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 222 30% 16%;
+    --muted-foreground: 215 20% 55%;
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 270 80% 60%;
+    --accent-foreground: 210 40% 95%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --success: 142 76% 36%;
+    --success: 160 80% 45%;
     --success-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
+    --border: 222 30% 18%;
+    --input: 222 30% 18%;
+    --ring: 190 100% 50%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Cosmic custom colors */
+    --cyber-cyan: 190 100% 50%;
+    --neon-purple: 270 80% 60%;
+    --cosmic-bg-start: 222 47% 6%;
+    --cosmic-bg-end: 222 40% 10%;
+    --glass-bg: 222 40% 12%;
+    --glass-border: 210 20% 20%;
+
+    --sidebar-background: 222 40% 8%;
+    --sidebar-foreground: 210 40% 90%;
+    --sidebar-primary: 190 100% 50%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 222 30% 16%;
+    --sidebar-accent-foreground: 210 40% 90%;
+    --sidebar-border: 222 30% 18%;
+    --sidebar-ring: 190 100% 50%;
   }
 }
 
@@ -55,10 +64,155 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', 'Outfit', sans-serif;
+    background: linear-gradient(180deg, hsl(222, 47%, 6%) 0%, hsl(225, 40%, 8%) 50%, hsl(222, 47%, 6%) 100%);
+    min-height: 100vh;
   }
 }
 
+/* ── Cosmic Glass Card ── */
+@layer components {
+  .glass-card {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(100, 200, 255, 0.1);
+    border-radius: var(--radius);
+  }
+
+  .glass-card-active {
+    background: rgba(20, 28, 50, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    border-radius: var(--radius);
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.15), inset 0 0 30px rgba(168, 85, 247, 0.05);
+  }
+
+  .glass-card-locked {
+    background: rgba(10, 15, 30, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(100, 120, 150, 0.15);
+    border-radius: var(--radius);
+    opacity: 0.85;
+  }
+
+  /* Gradient text for headings */
+  .text-gradient-cyan {
+    background: linear-gradient(135deg, #00d4ff 0%, #00f5d4 50%, #00d4ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    padding-block: 0.15em;
+  }
+
+  .text-gradient-purple {
+    background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Purple gradient button */
+  .btn-cosmic {
+    background: linear-gradient(135deg, #a855f7 0%, #7c3aed 50%, #a855f7 100%);
+    background-size: 200% 200%;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(168, 85, 247, 0.3);
+  }
+
+  .btn-cosmic:hover {
+    background-position: 100% 0;
+    box-shadow: 0 6px 30px rgba(168, 85, 247, 0.5);
+    transform: translateY(-2px);
+  }
+
+  /* Mission path dashed line */
+  .mission-path {
+    position: relative;
+  }
+
+  .mission-path::after {
+    content: '';
+    position: absolute;
+    width: 3px;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(100, 200, 255, 0.3) 0px,
+      rgba(100, 200, 255, 0.3) 8px,
+      transparent 8px,
+      transparent 16px
+    );
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* Dot connector for mission path */
+  .mission-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #00d4ff;
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.6), 0 0 24px rgba(0, 212, 255, 0.3);
+    position: relative;
+    z-index: 10;
+  }
+
+  /* Cosmic NavBar */
+  .nav-cosmic {
+    background: rgba(10, 14, 26, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(100, 200, 255, 0.08);
+  }
+
+  /* Glow badge */
+  .badge-completed {
+    background: rgba(0, 200, 150, 0.15);
+    color: #00c896;
+    border: 1px solid rgba(0, 200, 150, 0.3);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-transform: uppercase;
+  }
+
+  .badge-active {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-transform: uppercase;
+  }
+
+  .badge-locked {
+    background: rgba(100, 120, 150, 0.1);
+    color: rgba(150, 170, 200, 0.6);
+    border: 1px solid rgba(100, 120, 150, 0.15);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-transform: uppercase;
+  }
+}
+
+/* ── Animations ── */
 @layer utilities {
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
@@ -71,4 +225,90 @@
   .animate-shake {
     animation: shake 0.4s ease-in-out;
   }
+
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 10px rgba(0, 212, 255, 0.3); }
+    50% { box-shadow: 0 0 25px rgba(0, 212, 255, 0.6), 0 0 50px rgba(0, 212, 255, 0.2); }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .animate-shimmer {
+    background-size: 200% 100%;
+    animation: shimmer 3s linear infinite;
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out forwards;
+  }
+
+  /* Star field background effect */
+  .cosmic-bg {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cosmic-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(1px 1px at 20% 30%, rgba(255, 255, 255, 0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 70%, rgba(255, 255, 255, 0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 20%, rgba(255, 255, 255, 0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 60%, rgba(255, 255, 255, 0.3) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 10% 80%, rgba(0, 212, 255, 0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 70% 40%, rgba(168, 85, 247, 0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 10%, rgba(255, 255, 255, 0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 50% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 90%, rgba(0, 212, 255, 0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 85% 85%, rgba(255, 255, 255, 0.3) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+/* Scrollbar styling for cosmic theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(222, 47%, 6%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 255, 0.4);
 }

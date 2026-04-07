@@ -1,4 +1,4 @@
-import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom"; // [ĐÃ SỬA] Import thêm Navigate
+import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import NavBar from "@/components/NavBar";
 import Challenge7 from "@/components/Challenge7";
 import Challenge8 from "@/components/Challenge8";
@@ -8,22 +8,22 @@ import { ChallengesSection } from "@/components/ChallengesSection";
 import { Footer } from "@/components/Footer";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
 import { AdminDashboard } from "@/components/AdminDashboard";
+import { ProgressPage } from "@/components/ProgressPage";
+import { SettingsPage } from "@/components/SettingsPage";
 import NotFound from "./NotFound"; 
 
 // Khai báo type View để các file khác import không bị lỗi
-export type View = "landing" | "challenge7" | "challenge8" | "admin";
+export type View = "landing" | "challenge7" | "challenge8" | "admin" | "missions" | "progress" | "settings";
 
 // [MỚI] Trạm kiểm soát bảo vệ Route Admin
 const AdminProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const userStr = localStorage.getItem("tagedu_user");
   const user = userStr ? JSON.parse(userStr) : null;
 
-  // Nếu là user hợp lệ và có quyền admin thì cho phép đi qua
   if (user && user.role === 'admin') {
     return <>{children}</>;
   }
   
-  // Nếu chưa đăng nhập hoặc không phải admin -> Đá văng về trang chủ lập tức
   return <Navigate to="/" replace />;
 };
 
@@ -44,13 +44,22 @@ const Index = () => {
   const currentViewStr = location.pathname === "/" ? "landing" : location.pathname.substring(1);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background font-sans">
+    <div className="min-h-screen flex flex-col font-sans">
       <NavBar />
       
       <main className="flex-1">
         <Routes>
-          {/* URL Trang chủ */}
+          {/* URL Trang chủ / Mission Map */}
           <Route path="/" element={
+            <>
+              <HeroSection />
+              <ChallengesSection onNavigate={handleNavigate} />
+              <FeaturesSection />
+            </>
+          } />
+
+          {/* Mission Map alias */}
+          <Route path="/missions" element={
             <>
               <HeroSection />
               <ChallengesSection onNavigate={handleNavigate} />
@@ -61,23 +70,29 @@ const Index = () => {
           {/* Các URL Thử thách */}
           <Route path="/challenge7" element={<Challenge7 onNavigate={handleNavigate} />} />
           <Route path="/challenge8" element={<Challenge8 onNavigate={handleNavigate} />} />
+
+          {/* Progress Page */}
+          <Route path="/progress" element={<ProgressPage />} />
+
+          {/* Settings Page */}
+          <Route path="/settings" element={<SettingsPage />} />
           
-          {/* [ĐÃ SỬA] URL Trang Quản trị được bọc bởi Trạm kiểm soát */}
+          {/* URL Trang Quản trị được bọc bởi Trạm kiểm soát */}
           <Route path="/admin" element={
             <AdminProtectedRoute>
               <AdminDashboard />
             </AdminProtectedRoute>
           } />
 
-          {/* Chốt chặn 404: Nếu URL không khớp các link trên thì hiện NotFound */}
+          {/* Chốt chặn 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
 
-      {/* Chỉ hiện Footer ở trang chủ */}
-      {location.pathname === "/" && <Footer />}
+      {/* Chỉ hiện Footer ở trang chủ và missions */}
+      {(location.pathname === "/" || location.pathname === "/missions") && <Footer />}
       
-      {/* Vẫn giữ nguyên logic gửi currentView cho Bot */}
+      {/* Chatbot Widget */}
       <ChatbotWidget currentView={currentViewStr as View} />
     </div>
   );

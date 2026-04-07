@@ -15,72 +15,70 @@ try {
 // 1. Cập nhật thông tin cá nhân (Tên hiển thị)
 exports.updateProfile = async (req, res) => {
   const userId = req.user.id || req.user.userId;
-  const { full_name } = req.body;
+  const { full_name, language } = req.body;
+  const lang = language || 'vi';
 
   if (!full_name) {
-    return res.status(400).json({ error: 'Tên hiển thị không được để trống' });
+    return res.status(400).json({ error: lang === 'en' ? 'Display name cannot be empty' : 'Tên hiển thị không được để trống' });
   }
 
   try {
     await db.promise().query('UPDATE users SET full_name = ? WHERE id = ?', [full_name, userId]);
-    res.json({ message: 'Cập nhật thông tin thành công!', full_name });
+    res.json({ message: lang === 'en' ? 'Profile updated successfully!' : 'Cập nhật thông tin thành công!', full_name });
   } catch (error) {
     console.error("❌ Lỗi cập nhật Profile:", error);
-    res.status(500).json({ error: 'Lỗi máy chủ khi cập nhật thông tin.' });
+    res.status(500).json({ error: lang === 'en' ? 'Server error while updating profile.' : 'Lỗi máy chủ khi cập nhật thông tin.' });
   }
 };
 
 // 2. Đổi mật khẩu an toàn
 exports.changePassword = async (req, res) => {
   const userId = req.user.id || req.user.userId;
-  const { currentPassword, newPassword } = req.body;
+  const { currentPassword, newPassword, language } = req.body;
+  const lang = language || 'vi';
 
   if (!currentPassword || !newPassword) {
-    return res.status(400).json({ error: 'Vui lòng nhập đủ mật khẩu hiện tại và mật khẩu mới.' });
+    return res.status(400).json({ error: lang === 'en' ? 'Please enter both current and new password.' : 'Vui lòng nhập đủ mật khẩu hiện tại và mật khẩu mới.' });
   }
 
   if (currentPassword === newPassword) {
-    return res.status(400).json({ error: 'Mật khẩu mới phải khác mật khẩu hiện tại.' });
+    return res.status(400).json({ error: lang === 'en' ? 'New password must differ from current password.' : 'Mật khẩu mới phải khác mật khẩu hiện tại.' });
   }
 
   if (!bcrypt) {
-    return res.status(500).json({ error: 'Lỗi server: Hệ thống thiếu thư viện mã hóa.' });
+    return res.status(500).json({ error: lang === 'en' ? 'Server error: Missing encryption library.' : 'Lỗi server: Hệ thống thiếu thư viện mã hóa.' });
   }
 
   try {
-    // Đã sửa 'password' thành 'password_hash'
     const [users] = await db.promise().query('SELECT password_hash FROM users WHERE id = ?', [userId]);
     if (users.length === 0) {
-      return res.status(404).json({ error: 'Không tìm thấy người dùng.' });
+      return res.status(404).json({ error: lang === 'en' ? 'User not found.' : 'Không tìm thấy người dùng.' });
     }
 
     const user = users[0];
 
     // Kiểm tra nếu tài khoản chưa có mật khẩu (Đăng nhập bằng Google)
     if (!user.password_hash) {
-      // Vì tài khoản chưa có pass, chúng ta cho phép họ tạo pass mới luôn mà không cần check pass cũ
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(newPassword, salt);
       await db.promise().query('UPDATE users SET password_hash = ? WHERE id = ?', [hashedPassword, userId]);
       
-      return res.json({ message: 'Đã thiết lập mật khẩu thành công cho tài khoản của bạn!' });
+      return res.json({ message: lang === 'en' ? 'Password set successfully for your account!' : 'Đã thiết lập mật khẩu thành công cho tài khoản của bạn!' });
     }
 
-    // Nếu đã có mật khẩu thì kiểm tra mật khẩu hiện tại
     const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
     if (!isMatch) {
-      return res.status(400).json({ error: 'Mật khẩu hiện tại không đúng.' });
+      return res.status(400).json({ error: lang === 'en' ? 'Current password is incorrect.' : 'Mật khẩu hiện tại không đúng.' });
     }
 
-    // Băm mật khẩu mới và lưu vào DB
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
     await db.promise().query('UPDATE users SET password_hash = ? WHERE id = ?', [hashedPassword, userId]);
 
-    res.json({ message: 'Đổi mật khẩu thành công! Vui lòng dùng mật khẩu mới cho lần đăng nhập sau.' });
+    res.json({ message: lang === 'en' ? 'Password changed successfully! Please use your new password next time.' : 'Đổi mật khẩu thành công! Vui lòng dùng mật khẩu mới cho lần đăng nhập sau.' });
   } catch (error) {
     console.error("❌ Lỗi đổi mật khẩu:", error);
-    res.status(500).json({ error: 'Lỗi máy chủ khi đổi mật khẩu.' });
+    res.status(500).json({ error: lang === 'en' ? 'Server error while changing password.' : 'Lỗi máy chủ khi đổi mật khẩu.' });
   }
 };
