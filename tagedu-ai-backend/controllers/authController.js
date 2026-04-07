@@ -119,9 +119,10 @@ exports.forgotPassword = async (req, res) => {
 
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      family: 4, // ENFORCE IPv4 (fixes ENETUNREACH 2404:... on Render)
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      family: 4, // ENFORCE IPv4
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
