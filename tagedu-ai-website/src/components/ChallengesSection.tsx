@@ -135,10 +135,6 @@ export function ChallengesSection({ onNavigate }: ChallengesProps) {
                       `}
                       onClick={() => {
                         if (isLocked) return;
-                        if (mission.id === "challenge9") {
-                          toast.info(t("mission.comingSoon"));
-                          return;
-                        }
                         onNavigate(mission.routeId as any);
                       }}
                     >

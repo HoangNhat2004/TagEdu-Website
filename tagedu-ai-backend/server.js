@@ -29,8 +29,8 @@ app.use('/api', progressRoutes);
 app.use('/api/users', userRoutes); // [THÊM MỚI] Sử dụng route người dùng
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server đang chạy tại http://0.0.0.0:${PORT}`);
 
   // --- SELF-PING: Giữ Render free tier luôn hoạt động ---
   const RENDER_URL = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL;
