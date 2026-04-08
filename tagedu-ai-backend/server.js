@@ -32,18 +32,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server đang chạy tại http://0.0.0.0:${PORT}`);
 
-  // --- SELF-PING: Giữ Render free tier luôn hoạt động ---
-  const RENDER_URL = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL;
-  if (RENDER_URL) {
-    const INTERVAL = 14 * 60 * 1000; // 14 phút (trước ngưỡng 15 phút spin-down)
-    setInterval(async () => {
-      try {
-        const res = await fetch(RENDER_URL);
-        console.log(`🏓 Self-ping: ${res.status} - ${new Date().toLocaleString('vi-VN')}`);
-      } catch (err) {
-        console.error('❌ Self-ping thất bại:', err.message);
-      }
-    }, INTERVAL);
-    console.log(`🏓 Self-ping đã bật, ping mỗi 14 phút tới: ${RENDER_URL}`);
-  }
+  // --- Đã gỡ bỏ SELF-PING vì vi phạm chính sách của Render, gây lỗi 521 ---
 });
