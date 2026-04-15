@@ -207,7 +207,7 @@ export function ChatbotWidget({ currentView }: ChatbotProps) {
                     </div>
 
                     {/* Feedback */}
-                    {msg.role === "ai" && !isLoading && msg.id !== "guest-welcome" && msg.id !== "error-auth" && (
+                    {msg.role === "ai" && !isLoading && msg.id !== "guest-welcome" && msg.id !== "error-auth" && !msg.id.startsWith("welcome-") && (
                       <div className="flex items-center gap-1 mt-1.5 ml-1 opacity-50 hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => handleFeedback(msg.id, "up")}

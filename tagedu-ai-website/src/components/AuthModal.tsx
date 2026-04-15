@@ -16,20 +16,32 @@ interface AuthModalProps {
 const inputClass =
   "w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-gray-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-colors";
 
+const inputClassError =
+  "w-full rounded-lg border border-red-500/60 bg-white/5 py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-gray-500 focus:border-red-400 focus:ring-1 focus:ring-red-400 outline-none transition-colors";
+
 const inputClassDisabled =
   "w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pl-10 pr-4 text-sm text-gray-400 cursor-not-allowed";
 
-/* Custom Google Login button — uses useGoogleLogin hook so we control the label text */
+/* Inline error message component */
+function FieldError({ msg }: { msg: string }) {
+  if (!msg) return null;
+  return (
+    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-400 font-medium animate-in fade-in slide-in-from-top-1 duration-200">
+      <span className="shrink-0">⚠</span>
+      {msg}
+    </p>
+  );
+}
+
+/* Custom Google Login button */
 function GoogleLoginButton({ onSuccess, onError, label }: { onSuccess: (res: any) => void; onError: () => void; label: string }) {
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        // Exchange the access token for credential via Google's userinfo
         const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
         });
         const userInfo = await res.json();
-        // Pass as a compatible format for our backend
         onSuccess({ credential: tokenResponse.access_token, userInfo });
       } catch {
         onError();
@@ -58,7 +70,7 @@ function GoogleLoginButton({ onSuccess, onError, label }: { onSuccess: (res: any
 export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   const [mode, setMode] = useState<"login" | "register" | "forgot">("login");
   const [forgotStep, setForgotStep] = useState<1 | 2>(1);
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -71,17 +83,26 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     otp: "",
   });
 
+  // Field-level validation errors
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (isOpen) {
       setErrorMsg("");
       setSuccessMsg("");
+      setFieldErrors({});
     }
   }, [isOpen, language]);
 
   if (!isOpen) return null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    // Clear field error on change
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({ ...prev, [name]: "" }));
+    }
   };
 
   const switchMode = (newMode: "login" | "register" | "forgot") => {
@@ -89,18 +110,66 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     setErrorMsg("");
     setSuccessMsg("");
     setForgotStep(1);
+    setFieldErrors({});
+    setFormData({ fullName: "", email: "", password: "", otp: "" });
+  };
+
+  // Email format validator
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  // Validate login form
+  const validateLogin = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!formData.email.trim()) errors.email = t("auth.validation.emailRequired");
+    else if (!isValidEmail(formData.email)) errors.email = t("auth.validation.emailInvalid");
+    if (!formData.password) errors.password = t("auth.validation.passwordRequired");
+    else if (formData.password.length < 6) errors.password = t("auth.validation.passwordMin");
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Validate register form
+  const validateRegister = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!formData.fullName.trim()) errors.fullName = t("auth.validation.nameRequired");
+    if (!formData.email.trim()) errors.email = t("auth.validation.emailRequired");
+    else if (!isValidEmail(formData.email)) errors.email = t("auth.validation.emailInvalid");
+    if (!formData.password) errors.password = t("auth.validation.passwordRequired");
+    else if (formData.password.length < 6) errors.password = t("auth.validation.passwordMin");
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Validate forgot step 1 (email only)
+  const validateForgotStep1 = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!formData.email.trim()) errors.email = t("auth.validation.emailRequired");
+    else if (!isValidEmail(formData.email)) errors.email = t("auth.validation.emailInvalid");
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Validate forgot step 2 (otp + new password)
+  const validateForgotStep2 = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!formData.otp.trim()) errors.otp = t("auth.validation.otpRequired");
+    if (!formData.password) errors.password = t("auth.validation.newPasswordRequired");
+    else if (formData.password.length < 6) errors.password = t("auth.validation.passwordMin");
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
     setSuccessMsg("");
-    setIsLoading(true);
 
     const isLogin = mode === "login";
+    if (isLogin ? !validateLogin() : !validateRegister()) return;
+
+    setIsLoading(true);
     const url = isLogin ? `${API_URL}/login` : `${API_URL}/register`;
-    
-    const payload = isLogin 
+    const payload = isLogin
       ? { email: formData.email, password: formData.password, language }
       : { fullName: formData.fullName, email: formData.email, password: formData.password, language };
 
@@ -117,8 +186,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         if (isLogin) {
           localStorage.setItem("tagedu_token", data.token);
           localStorage.setItem("tagedu_user", JSON.stringify(data.user));
-          onSuccess(data.user); 
-          onClose(); 
+          onSuccess(data.user);
+          onClose();
         } else {
           setSuccessMsg(t("auth.registerSuccess"));
           setTimeout(() => switchMode("login"), 1500);
@@ -137,8 +206,9 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     e.preventDefault();
     setErrorMsg("");
     setSuccessMsg("");
-    setIsLoading(true);
+    if (!validateForgotStep1()) return;
 
+    setIsLoading(true);
     try {
       const response = await fetch(`${API_URL}/forgot-password`, {
         method: "POST",
@@ -161,8 +231,9 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     e.preventDefault();
     setErrorMsg("");
     setSuccessMsg("");
-    setIsLoading(true);
+    if (!validateForgotStep2()) return;
 
+    setIsLoading(true);
     try {
       const response = await fetch(`${API_URL}/reset-password`, {
         method: "POST",
@@ -194,8 +265,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       if (response.ok) {
         localStorage.setItem("tagedu_token", data.token);
         localStorage.setItem("tagedu_user", JSON.stringify(data.user));
-        onSuccess(data.user); 
-        onClose(); 
+        onSuccess(data.user);
+        onClose();
       } else throw new Error(data.error);
     } catch (error: any) {
       setErrorMsg(error.message);
@@ -208,7 +279,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID} key={language}>
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm transition-all duration-300">
         <div className="relative w-full max-w-md overflow-hidden rounded-2xl glass-card border border-white/10 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-          
+
           <button onClick={onClose} className="absolute right-4 top-4 rounded-full p-1 text-gray-400 hover:bg-white/10 transition-colors z-10">
             <X className="h-5 w-5" />
           </button>
@@ -232,21 +303,56 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             {successMsg && <div className="mb-4 rounded-lg bg-green-500/10 p-3 text-sm text-green-400 border border-green-500/20">{successMsg}</div>}
 
             {mode === "forgot" ? (
-              <form onSubmit={forgotStep === 1 ? handleSendOTP : handleResetPassword} className="space-y-4">
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
-                  <input type="email" name="email" placeholder={t("auth.emailPlaceholder")} required disabled={forgotStep === 2} value={formData.email} onChange={handleChange} className={forgotStep === 2 ? inputClassDisabled : inputClass} />
+              <form onSubmit={forgotStep === 1 ? handleSendOTP : handleResetPassword} noValidate className="space-y-4">
+                {/* Email */}
+                <div>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder={t("auth.emailPlaceholder")}
+                      disabled={forgotStep === 2}
+                      value={formData.email}
+                      onChange={handleChange}
+                      className={forgotStep === 2 ? inputClassDisabled : fieldErrors.email ? inputClassError : inputClass}
+                    />
+                  </div>
+                  <FieldError msg={fieldErrors.email || ""} />
                 </div>
 
                 {forgotStep === 2 && (
                   <>
-                    <div className="relative">
-                      <KeyRound className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
-                      <input type="text" name="otp" placeholder={t("auth.otpPlaceholder")} required value={formData.otp} onChange={handleChange} className={inputClass} />
+                    {/* OTP */}
+                    <div>
+                      <div className="relative">
+                        <KeyRound className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+                        <input
+                          type="text"
+                          name="otp"
+                          placeholder={t("auth.otpPlaceholder")}
+                          value={formData.otp}
+                          onChange={handleChange}
+                          className={fieldErrors.otp ? inputClassError : inputClass}
+                        />
+                      </div>
+                      <FieldError msg={fieldErrors.otp || ""} />
                     </div>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
-                      <input type="password" name="password" placeholder={t("auth.newPasswordPlaceholder")} required minLength={6} value={formData.password} onChange={handleChange} className={inputClass} />
+
+                    {/* New Password */}
+                    <div>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+                        <input
+                          type="password"
+                          name="password"
+                          placeholder={t("auth.newPasswordPlaceholder")}
+                          value={formData.password}
+                          onChange={handleChange}
+                          className={fieldErrors.password ? inputClassError : inputClass}
+                        />
+                      </div>
+                      <FieldError msg={fieldErrors.password || ""} />
                     </div>
                   </>
                 )}
@@ -254,7 +360,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 <button type="submit" disabled={isLoading} className="mt-2 flex w-full items-center justify-center rounded-lg btn-cosmic py-2.5 text-sm font-semibold disabled:opacity-70">
                   {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (forgotStep === 1 ? t("auth.sendOtp") : t("auth.changePasswordBtn"))}
                 </button>
-                
+
                 <div className="text-center mt-4">
                   <button type="button" onClick={() => switchMode("login")} className="text-sm font-semibold text-gray-400 hover:text-cyan-400 transition-colors">
                     {t("auth.backToLogin")}
@@ -263,22 +369,55 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               </form>
             ) : (
               <>
-                <form onSubmit={handleAuthSubmit} className="space-y-4">
+                <form onSubmit={handleAuthSubmit} noValidate className="space-y-4">
+                  {/* Full Name (register only) */}
                   {mode === "register" && (
-                    <div className="relative">
-                      <UserIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
-                      <input type="text" name="fullName" placeholder={t("auth.fullNamePlaceholder")} required value={formData.fullName} onChange={handleChange} className={inputClass} />
+                    <div>
+                      <div className="relative">
+                        <UserIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+                        <input
+                          type="text"
+                          name="fullName"
+                          placeholder={t("auth.fullNamePlaceholder")}
+                          value={formData.fullName}
+                          onChange={handleChange}
+                          className={fieldErrors.fullName ? inputClassError : inputClass}
+                        />
+                      </div>
+                      <FieldError msg={fieldErrors.fullName || ""} />
                     </div>
                   )}
 
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
-                    <input type="email" name="email" placeholder={t("auth.emailPlaceholder")} required value={formData.email} onChange={handleChange} className={inputClass} />
+                  {/* Email */}
+                  <div>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+                      <input
+                        type="email"
+                        name="email"
+                        placeholder={t("auth.emailPlaceholder")}
+                        value={formData.email}
+                        onChange={handleChange}
+                        className={fieldErrors.email ? inputClassError : inputClass}
+                      />
+                    </div>
+                    <FieldError msg={fieldErrors.email || ""} />
                   </div>
 
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
-                    <input type="password" name="password" placeholder={t("auth.passwordPlaceholder")} required minLength={6} value={formData.password} onChange={handleChange} className={inputClass} />
+                  {/* Password */}
+                  <div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+                      <input
+                        type="password"
+                        name="password"
+                        placeholder={t("auth.passwordPlaceholder")}
+                        value={formData.password}
+                        onChange={handleChange}
+                        className={fieldErrors.password ? inputClassError : inputClass}
+                      />
+                    </div>
+                    <FieldError msg={fieldErrors.password || ""} />
                   </div>
 
                   {mode === "login" && (
@@ -297,7 +436,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 <div className="mt-5 flex items-center before:mt-0.5 before:flex-1 before:border-t before:border-white/10 after:mt-0.5 after:flex-1 after:border-t after:border-white/10">
                   <p className="mx-4 mb-0 text-center text-sm text-gray-500">{t("auth.or")}</p>
                 </div>
-                
+
                 <div className="mt-5 flex justify-center">
                   <GoogleLoginButton onSuccess={handleGoogleSuccess} onError={() => setErrorMsg(t("auth.googleFailed"))} label={t("auth.loginWithGoogle")} />
                 </div>

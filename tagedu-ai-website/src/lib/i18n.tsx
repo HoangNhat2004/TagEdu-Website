@@ -118,6 +118,13 @@ const translations: Record<Language, Translations> = {
     "auth.passwordChanged": "Password changed successfully! Redirecting to login...",
     "auth.googleFailed": "Google login failed",
     "auth.error": "An error occurred",
+    "auth.validation.nameRequired": "Please enter your full name.",
+    "auth.validation.emailRequired": "Please enter your email address.",
+    "auth.validation.emailInvalid": "Email address is not valid.",
+    "auth.validation.passwordRequired": "Please enter your password.",
+    "auth.validation.passwordMin": "Password must be at least 6 characters.",
+    "auth.validation.otpRequired": "Please enter the OTP code.",
+    "auth.validation.newPasswordRequired": "Please enter your new password.",
 
     // Profile Modal
     "profile.title": "Personal Profile",
@@ -407,6 +414,13 @@ const translations: Record<Language, Translations> = {
     "auth.passwordChanged": "Đổi mật khẩu thành công! Đang chuyển về đăng nhập...",
     "auth.googleFailed": "Đăng nhập Google thất bại",
     "auth.error": "Có lỗi xảy ra",
+    "auth.validation.nameRequired": "Vui lòng nhập họ và tên.",
+    "auth.validation.emailRequired": "Vui lòng nhập địa chỉ email.",
+    "auth.validation.emailInvalid": "Địa chỉ email không hợp lệ.",
+    "auth.validation.passwordRequired": "Vui lòng nhập mật khẩu.",
+    "auth.validation.passwordMin": "Mật khẩu phải có ít nhất 6 ký tự.",
+    "auth.validation.otpRequired": "Vui lòng nhập mã OTP.",
+    "auth.validation.newPasswordRequired": "Vui lòng nhập mật khẩu mới.",
 
     // Profile Modal
     "profile.title": "Hồ sơ cá nhân",
