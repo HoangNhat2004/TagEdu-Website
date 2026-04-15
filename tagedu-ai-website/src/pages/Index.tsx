@@ -94,8 +94,8 @@ const Index = () => {
       {/* Chỉ hiện Footer ở trang chủ và missions */}
       {(location.pathname === "/" || location.pathname === "/missions") && <Footer />}
       
-      {/* Chatbot Widget */}
-      <ChatbotWidget currentView={currentViewStr as View} />
+      {/* Chatbot Widget (Bong bóng chat nổi) - Ẩn ở Challenge 9 (dùng Inline Chatbot) và Admin */}
+      {currentViewStr !== "challenge9" && currentViewStr !== "admin" && <ChatbotWidget currentView={currentViewStr as View} />}
     </div>
   );
 };

@@ -33,6 +33,22 @@ export function useChatbot(currentView: View, isOpen: boolean) {
     setInputValue("");
   }, [currentView]);
 
+  // Instant translation for system messages when language changes
+  useEffect(() => {
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === "guest-welcome") {
+        return { ...msg, content: t("chat.guestWelcome") };
+      }
+      if (msg.id === "error-auth") {
+        return { ...msg, content: t("chat.sessionExpired") };
+      }
+      if (msg.id.startsWith("welcome-")) {
+        return { ...msg, content: getWelcomeMessage(currentView) };
+      }
+      return msg;
+    }));
+  }, [language, currentView]); // dependencies are language and view
+
   const getActiveUser = () => {
     try {
       const userStr = localStorage.getItem("tagedu_user");
@@ -56,6 +72,8 @@ export function useChatbot(currentView: View, isOpen: boolean) {
       return t("chat.welcomeChallenge7").replace("{name}", userName);
     } else if (view === "challenge8") {
       return t("chat.welcomeChallenge8").replace("{name}", userName);
+    } else if (view === "challenge9") {
+      return t("chat.welcomeChallenge9").replace("{name}", userName);
     }
     return t("chat.welcomeDefault").replace("{name}", userName);
   };
@@ -65,6 +83,8 @@ export function useChatbot(currentView: View, isOpen: boolean) {
       return [t("chat.qr.c7_1"), t("chat.qr.c7_2"), t("chat.qr.c7_3")];
     } else if (view === "challenge8") {
       return [t("chat.qr.c8_1"), t("chat.qr.c8_2"), t("chat.qr.c8_3")];
+    } else if (view === "challenge9") {
+      return [t("chat.qr.c9_1"), t("chat.qr.c9_2"), t("chat.qr.c9_3")];
     }
     return [t("chat.qr.default1"), t("chat.qr.default2"), t("chat.qr.default3")];
   };

@@ -191,7 +191,6 @@ export function AdminDashboard() {
                   <th className="p-4 font-semibold tracking-wider">{t("admin.colId")}</th>
                   <th className="p-4 font-semibold tracking-wider">{t("admin.colName")}</th>
                   <th className="p-4 font-semibold tracking-wider">{t("admin.colEmail")}</th>
-                  <th className="p-4 font-semibold tracking-wider">{t("admin.colRole")}</th>
                   <th className="p-4 font-semibold text-center tracking-wider">{t("admin.colMessages")}</th>
                   <th className="p-4 font-semibold text-center tracking-wider">{t("admin.colProgress")}</th>
                   <th className="p-4 font-semibold text-center tracking-wider">{t("admin.colActions")}</th>
@@ -200,19 +199,13 @@ export function AdminDashboard() {
               <tbody className="bg-transparent divide-y divide-white/5">
                 {currentUsers.map((u) => {
                   const completed = u.completed_challenges || 0;
-                  const totalChallenges = 2;
+                  const totalChallenges = 3;
                   const isDoneAll = completed === totalChallenges;
                   return (
                     <tr key={u.id} className="hover:bg-cyan-900/20 transition-colors">
                       <td className="p-4 text-gray-400 font-mono">#{u.id}</td>
                       <td className="p-4 font-bold text-white">{u.full_name}</td>
                       <td className="p-4 text-gray-300">{u.email}</td>
-                      <td className="p-4">
-                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase border 
-                          ${u.role === 'admin' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(251,191,36,0.2)]' : 'bg-blue-500/20 text-cyan-300 border-blue-500/30'}`}>
-                          {u.role}
-                        </span>
-                      </td>
                       <td className="p-4 text-center">
                         <div className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-300 text-xs font-bold">
                           <MessageSquare className="h-3.5 w-3.5 text-cyan-400" />
@@ -248,7 +241,7 @@ export function AdminDashboard() {
           <div className="md:hidden divide-y divide-white/10 bg-transparent">
             {currentUsers.map((u) => {
               const completed = u.completed_challenges || 0;
-              const totalChallenges = 2;
+              const totalChallenges = 3;
               const isDoneAll = completed === totalChallenges;
               return (
                 <div key={u.id} className="p-4 hover:bg-cyan-900/20 transition-colors">
@@ -256,10 +249,6 @@ export function AdminDashboard() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-white">{u.full_name}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border
-                          ${u.role === 'admin' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-blue-500/20 text-cyan-300 border-blue-500/30'}`}>
-                          {u.role}
-                        </span>
                       </div>
                       <p className="text-sm text-gray-400 mt-1 truncate">{u.email}</p>
                       <p className="text-xs text-gray-500 mt-0.5 font-mono">#{u.id}</p>
@@ -337,6 +326,7 @@ export function AdminDashboard() {
           { key: "landing",    label: t("admin.tabHome") },
           { key: "challenge7", label: t("admin.tabChallenge1") },
           { key: "challenge8", label: t("admin.tabChallenge2") },
+          { key: "challenge9", label: t("admin.tabChallenge3") },
         ];
 
         const filteredLogs = chatLogs

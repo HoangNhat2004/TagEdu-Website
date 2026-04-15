@@ -37,8 +37,10 @@ export function ChatbotWidget({ currentView }: ChatbotProps) {
   } = useChatbot(currentView, isOpen);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isOpen, isThinking]);
+    if (isOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages.length, isThinking, isOpen]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -117,7 +119,7 @@ export function ChatbotWidget({ currentView }: ChatbotProps) {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 bg-[#0a0e1a]/80 backdrop-blur-sm">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 bg-[#0a0e1a]/80 backdrop-blur-sm">
           <div className="flex flex-col gap-5">
             {messages.map((msg) => {
               if (msg.role === "ai" && msg.content === "" && isThinking) return null;
@@ -138,16 +140,16 @@ export function ChatbotWidget({ currentView }: ChatbotProps) {
                   </div>
 
                   {/* Bubble + feedback */}
-                  <div className={`flex flex-col max-w-[82%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                  <div className={`flex flex-col max-w-[82%] w-fit min-w-0 ${msg.role === "user" ? "items-end" : "items-start"}`}>
                     <div
-                      className={`rounded-2xl px-4 py-3 text-[14px] leading-relaxed shadow-sm
+                      className={`rounded-2xl px-4 py-3 text-[14px] leading-relaxed shadow-sm min-w-0 w-full break-words [overflow-wrap:anywhere] whitespace-normal overflow-x-hidden
                         ${msg.role === "ai"
                           ? "rounded-tl-sm bg-[#131b2f] border border-white/5 text-gray-200 shadow-md"
                           : "rounded-tr-sm bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/20 whitespace-pre-wrap"
                         }`}
                     >
                       {msg.role === "ai" ? (
-                        <div className="prose prose-sm prose-invert prose-p:leading-relaxed prose-pre:p-0 max-w-none text-left prose-strong:text-white">
+                        <div className="prose prose-sm prose-invert prose-p:leading-relaxed prose-pre:p-0 max-w-full w-full min-w-0 [overflow-wrap:anywhere] break-words whitespace-normal text-left prose-strong:text-white pr-3 overflow-x-hidden">
                           <ReactMarkdown
                             components={{
                               p: ({ node, ...props }) => <p className="mb-3 last:mb-0" {...props} />,

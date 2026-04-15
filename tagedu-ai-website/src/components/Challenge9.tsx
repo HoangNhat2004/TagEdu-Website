@@ -1,16 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Rocket, Play, RefreshCw, Terminal, CheckCircle2, Circle, HelpCircle, FileCode, Check } from "lucide-react";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
+import { InlineChatbot } from "./InlineChatbot";
 
 interface ChallengeProps {
   onNavigate: (view: any) => void;
 }
 
-const INITIAL_CODE = `# Mission: Ignite Thrusters
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+const getInitialCode = (t: any) => `${t("c9.code.mission")}
 def calculateTrajectory():
     fuelLevel = 85
     destination = "Mars_Station_B"
@@ -21,96 +24,306 @@ def calculateTrajectory():
     else:
         print("Need more fuel, Explorer!")
 
-# Your tasks:
-# 1. Define fuelLevel
-# 2. Assign a value between 0-100
-# 3. Invoke calculateTrajectory()
+${t("c9.code.tasks")}
+${t("c9.code.task1")}
+${t("c9.code.task2")}
+${t("c9.code.task3")}
 
 `;
 
 export default function Challenge9({ onNavigate }: ChallengeProps) {
   const { t } = useI18n();
-  const [code, setCode] = useState(INITIAL_CODE);
-  const [outputLines, setOutputLines] = useState<string[]>([
-    "c9.term.init",
-    "c9.term.check",
-    "> ..."
-  ]);
+  const [code, setCode] = useState(() => getInitialCode(t));
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [outputLines, setOutputLines] = useState<string[]>([]);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const velocityIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const runTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const terminalRef = useRef<HTMLDivElement>(null);
   const [velocity, setVelocity] = useState(0);
   const [fuelCapacity, setFuelCapacity] = useState(85);
-  const [isSuccess, setIsSuccess] = useState(false);
-
-  // Validation states
+  const [destination, setDestination] = useState("Mars_Station_B");
   const [hasFuelDefined, setHasFuelDefined] = useState(false);
   const [hasValidValue, setHasValidValue] = useState(false);
+  const [hasValueMatch, setHasValueMatch] = useState(false);
   const [hasInvoked, setHasInvoked] = useState(false);
+  const [hasDestination, setHasDestination] = useState(false);
+
+  // Tự động cuộn lên đầu trang khi vào thử thách
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Khởi tạo terminal ban đầu để nhận đúng giá trị fuelCapacity
+  useEffect(() => {
+    if (outputLines.length === 0) {
+      setOutputLines([
+        "c9.term.init",
+        `c9.term.check___${fuelCapacity}`,
+        "> ..."
+      ]);
+    }
+  }, [fuelCapacity, outputLines.length]);
 
   useEffect(() => {
-    // Check validation dynamically as the user types
-    // Xóa comment để kiểm tra logic chính xác
-    const codeWithoutComments = code.replace(/#.*/g, "");
+    // Syncing indicator logic
+    setIsSyncing(true);
+    // 1. Dừng ngay bộ đếm vận tốc đang chạy ngầm (nếu có)
+    if (velocityIntervalRef.current) {
+      clearInterval(velocityIntervalRef.current);
+      velocityIntervalRef.current = null;
+    }
+    // 2. HỦY NGAY tiến trình in Terminal của lần Run trước đó (Chống bug bóng ma)
+    if (runTimeoutRef.current) {
+      clearTimeout(runTimeoutRef.current);
+      runTimeoutRef.current = null;
+    }
 
-    const fuelDefinedMatch = codeWithoutComments.match(/fuelLevel\s*=/);
+    // Reset kết quả cũ ngay khi người dùng bắt đầu sửa code
+    setIsSuccess(false);
+    setIsRunning(false);
+    setVelocity(0);
+
+    const syncTimer = setTimeout(() => {
+      setIsSyncing(false);
+    }, 1000);
+
+    // Check validation dynamically as the user types
+    // 1. Tạo các phiên bản code đã làm sạch
+    const codeWithoutComments = code.replace(/#.*/g, "").replace(/'''[\s\S]*?'''|"""[\s\S]*?"""/g, "");
+    // Thay thế chuỗi bằng placeholder có dấu cách để tránh việc ghép dính code lại với nhau
+    const codeWithoutStrings = codeWithoutComments.replace(/(['"])(?:(?!\1|\\).|\\.)*?\1/g, " _STR_ "); 
+
+    // 2. Kiểm tra fuelLevel (Sử dụng bản đã xóa cả chuỗi văn bản để an toàn tuyệt đối)
+    const fuelDefinedMatch = codeWithoutStrings.match(/^[ \t]*fuelLevel[ \t]*=/m);
     setHasFuelDefined(!!fuelDefinedMatch);
 
-    const valueMatch = codeWithoutComments.match(/fuelLevel\s*=\s*(\d+)/);
+    // Regex mới: Bắt buộc dòng phải kết thúc sau giá trị (chỉ cho phép khoảng trắng hoặc comment)
+    const fuelMatches = Array.from(codeWithoutStrings.matchAll(/^[ \t]*fuelLevel[ \t]*=[ \t]*([ \t\-\+]*)(0(?!\d)|[1-9]\d*)(?:\.\d+)?[ \t]*(?:#.*)?$/gm));
     let validVal = false;
-    if (valueMatch) {
-      const val = parseInt(valueMatch[1], 10);
+    let foundDigits = false;
+    let currentFuel = 0;
+
+    if (fuelMatches.length > 0) {
+      const lastMatch = fuelMatches[fuelMatches.length - 1];
+      foundDigits = true;
+      const signs = lastMatch[1];
+      const digits = lastMatch[0].split('=')[1].trim().replace(/^[ \t\-\+]+/, '');
+      
+      // Đếm số dấu trừ để xác định âm hay dương
+      const minusCount = (signs.match(/-/g) || []).length;
+      const val = parseFloat(digits) * (minusCount % 2 === 0 ? 1 : -1);
+      
       validVal = val >= 0 && val <= 100;
-      if (validVal) setFuelCapacity(val);
+      currentFuel = val;
+      setFuelCapacity(val); 
+    } else {
+      setFuelCapacity(0);
     }
     setHasValidValue(validVal);
+    setHasValueMatch(foundDigits);
 
-    // Kiểm tra xem hàm có được gọi sau khi định nghĩa không
-    const parts = codeWithoutComments.split(/def\s+calculateTrajectory\(\):/);
-    if (parts.length > 1) {
-      setHasInvoked(parts[1].includes("calculateTrajectory()"));
+    // Trình bày số ngắn gọn nếu quá dài để tránh vỡ UI
+    const fuelDisplay = currentFuel.toString().length > 12 
+      ? currentFuel.toString().substring(0, 10) + "..." 
+      : currentFuel.toString();
+
+    // Cập nhật terminal với giá trị CÔNG TÂM
+    setOutputLines([
+      "c9.term.init",
+      `c9.term.check___${fuelDisplay}`,
+      "> ..."
+    ]);
+
+    // 3. Bắt biến destination (Kiểm tra cú pháp nghiêm ngặt trước)
+    // Bước A: Kiểm tra xem có đúng là CHỈ CÓ MỘT chuỗi hay không (dùng codeWithoutStrings)
+    const destSyntaxMatch = codeWithoutStrings.match(/^[ \t]*destination[ \t]*=[ \t]*_STR_[ \t]*(?:#.*)?$/m);
+    
+    let destVal = "";
+    if (destSyntaxMatch) {
+      // Bước B: Nếu cú pháp chuẩn (chỉ 1 string), ta mới lấy giá trị thật từ bản code gốc (đã xóa comment)
+      const destMatches = Array.from(codeWithoutComments.matchAll(/^[ \t]*destination[ \t]*=[ \t]*(['"])(.*?)\1[ \t]*(?:#.*)?$/gm));
+      if (destMatches.length > 0) {
+        destVal = destMatches[destMatches.length - 1][2];
+      }
+    }
+
+    setDestination(destVal);
+    setHasDestination(destVal !== "");
+
+    // 4. Kiểm tra xem hàm có được gọi ở Global Scope (đầu dòng) và PHẢI SAU khi định nghĩa không
+    // Sử dụng codeWithoutStrings để tránh bị lừa bởi văn bản trong print()
+    const defMatch = codeWithoutStrings.match(/^[ \t]*def\s+calculateTrajectory\(\):[ \t]*(?:#.*)?$/m);
+    const invokeMatch = codeWithoutStrings.match(/^[ \t]*calculateTrajectory\(\)[ \t]*(?:#.*)?$/m);
+    
+    if (defMatch && invokeMatch) {
+      // Đảm bảo vị trí của lệnh gọi hàm lớn hơn vị trí của định nghĩa hàm
+      setHasInvoked(invokeMatch.index! > defMatch.index!);
     } else {
       setHasInvoked(false);
     }
+
+    return () => clearTimeout(syncTimer);
   }, [code]);
 
+  // [MỚI] Tự động cuộn Terminal xuống đáy khi có dòng mới
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTo({
+        top: terminalRef.current.scrollHeight,
+        behavior: "smooth"
+      });
+    }
+  }, [outputLines]);
+
+  // [MỚI] Lưu tiến độ khi hoàn thành thử thách
+  useEffect(() => {
+    if (isSuccess) {
+      const saveProgress = async () => {
+        const token = localStorage.getItem("tagedu_token");
+        if (!token) return;
+
+        try {
+          await fetch(`${API_URL}/progress/complete`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ challengeId: "challenge9" }),
+          });
+          
+          // Phát sự kiện để cập nhật lại Bản đồ nhiệm vụ và thanh tiến độ ngay lập tức
+          window.dispatchEvent(new Event("auth_change"));
+        } catch (error) {
+          console.error("Lỗi khi lưu tiến độ:", error);
+        }
+      };
+      saveProgress();
+    }
+  }, [isSuccess]);
+
   const handleRunCode = () => {
-    // Reset trạng thái thành công trước đó
+    if (isRunning) return;
+    setIsRunning(true);
+
+    // Hủy các tiến trình cũ
+    if (velocityIntervalRef.current) clearInterval(velocityIntervalRef.current);
+    if (runTimeoutRef.current) clearTimeout(runTimeoutRef.current);
+
+    // Reset trạng thái
     setIsSuccess(false);
     setVelocity(0);
     
-    // Xóa terminal cũ và in lại dòng log mới để user dễ nhìn thấy thay đổi
+    // Xóa terminal cũ và in lại dòng log mới
     setOutputLines([
       "c9.term.init",
-      "c9.term.check",
+      `c9.term.check___${fuelCapacity}`,
       "> ...",
       "c9.term.exec"
     ]);
 
-    if (hasFuelDefined && hasValidValue && hasInvoked) {
-      setTimeout(() => {
-        setOutputLines((prev) => [
-          ...prev, 
-          "c9.term.ready", 
-          `c9.term.ignited___${fuelCapacity}`,
-          "c9.term.success"
-        ]);
-        setVelocity(24000); // Set mock velocity
-        setIsSuccess(true);
-      }, 800);
+    if (hasFuelDefined && hasValidValue && hasInvoked && hasDestination) {
+      if (fuelCapacity > 50) {
+        runTimeoutRef.current = setTimeout(() => {
+          setOutputLines((prev) => [
+            ...prev, 
+            "c9.term.ready", 
+            `c9.term.ignited___${fuelCapacity}`,
+            "c9.term.success"
+          ]);
+          setIsSuccess(true);
+          setIsRunning(false);
+          runTimeoutRef.current = null;
+          
+          // Tạo hiệu ứng tăng tốc dần dần
+          const targetVelocity = fuelCapacity * 300;
+          let currentVelocity = 0;
+          const duration = 2000;
+          const interval = 20;
+          const step = targetVelocity / (duration / interval);
+          
+          velocityIntervalRef.current = setInterval(() => {
+            currentVelocity += step;
+            if (currentVelocity >= targetVelocity) {
+              setVelocity(targetVelocity);
+              if (velocityIntervalRef.current) clearInterval(velocityIntervalRef.current);
+              velocityIntervalRef.current = null;
+            } else {
+              setVelocity(Math.floor(currentVelocity));
+            }
+          }, interval);
+          
+        }, 1500);
+      } else {
+        runTimeoutRef.current = setTimeout(() => {
+          setOutputLines((prev) => [
+            ...prev,
+            "c9.term.needFuel",
+            "c9.term.aborted"
+          ]);
+          setIsRunning(false);
+          runTimeoutRef.current = null;
+        }, 1500);
+      }
     } else {
-      setTimeout(() => {
+      runTimeoutRef.current = setTimeout(() => {
         setOutputLines((prev) => [
           ...prev, 
           "c9.term.errMiss",
           hasInvoked ? "" : "c9.term.errInvoke",
-          hasFuelDefined ? "" : "c9.term.errDefine",
+          destination ? "" : "c9.term.errTarget",
+          hasFuelDefined 
+            ? (hasValueMatch ? (hasValidValue ? "" : "c9.term.errValue") : "c9.term.errAssign") 
+            : "c9.term.errDefine",
         ].filter(Boolean));
-      }, 500);
+        setIsRunning(false);
+        runTimeoutRef.current = null;
+      }, 800);
     }
   };
 
+  const resetLiveView = () => {
+    // Dừng mọi tiến trình ngầm
+    if (velocityIntervalRef.current) {
+      clearInterval(velocityIntervalRef.current);
+      velocityIntervalRef.current = null;
+    }
+    if (runTimeoutRef.current) {
+      clearTimeout(runTimeoutRef.current);
+      runTimeoutRef.current = null;
+    }
+    
+    setIsSuccess(false);
+    setIsRunning(false);
+    setVelocity(0);
+    // Không reset fuelCapacity và destination ở đây, 
+    // vì chúng được binding trực tiếp (Live Telemetry) từ Code Editor.
+    setOutputLines([
+      "c9.term.init",
+      `c9.term.check___${fuelCapacity}`,
+      "> ..."
+    ]);
+  };
+
+  // Hàm helper để render dòng terminal với tham số
+  const renderTerminalLine = (line: string) => {
+    if (line.includes("___")) {
+      const [key, param] = line.split("___");
+      return t(key).replace("{fuel}", param);
+    }
+    return t(line);
+  };
+
+  const destDisplay = destination.length > 15 
+    ? destination.substring(0, 13) + "..." 
+    : destination;
+
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 md:flex-row pb-24">
-      {/* LEFT PANEL: Mission Brief */}
-      <div className="flex w-full flex-col gap-6 md:w-1/4">
+    <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-6 px-4 py-8 md:flex-row pb-24">
+      {/* LEFT PANEL: Mission Brief & AI Assistant */}
+      <div className="flex w-full flex-col gap-6 md:w-[360px] shrink-0 h-full overflow-hidden">
         <div>
           <h2 className="mb-4 text-xl font-bold tracking-wide text-primary">
             {t("c9.title")}
@@ -148,31 +361,21 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
                 )}
                 <span className="text-sm font-medium">{t("c9.task3")}</span>
               </div>
+              <div className="flex items-center gap-3">
+                {hasDestination ? (
+                  <CheckCircle2 className="h-5 w-5 text-success" />
+                ) : (
+                  <Circle className="h-5 w-5 text-muted-foreground" />
+                )}
+                <span className="text-sm font-medium">{t("c9.task4")}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Legend / Hints */}
-        <div className="rounded-lg border border-border bg-card p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20">
-              <HelpCircle className="h-5 w-5 text-primary" />
-            </div>
-            <span className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-              LEGEND .AI
-            </span>
-          </div>
-          <div className="rounded border border-border bg-background p-4 text-sm text-muted-foreground">
-            {t("c9.hintLabel")}
-          </div>
-          <div className="mt-4 flex gap-3">
-            <Button variant="outline" className="flex-1">
-              {t("c9.hintBtn")}
-            </Button>
-            <Button variant="secondary" className="flex-1">
-              {t("c9.solutionBtn")}
-            </Button>
-          </div>
+        {/* AI Chatbot Inline (Replacing old LEGEND.AI) */}
+        <div className="flex h-[500px] w-full shrink-0">
+          <InlineChatbot currentView="challenge9" />
         </div>
       </div>
 
@@ -185,7 +388,7 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
             <span className="text-sm font-semibold text-foreground">main.py</span>
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setCode(INITIAL_CODE)}>
+            <Button variant="ghost" size="icon" onClick={() => setCode(getInitialCode(t))}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
@@ -209,31 +412,19 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
             <Terminal className="h-4 w-4" />
             {t("c9.term.title")}
           </div>
-          <div className="flex h-32 flex-col gap-1 overflow-y-auto rounded bg-black/50 p-3 text-muted-foreground">
-            {outputLines.map((lineStr, idx) => {
-              let text = lineStr;
-              if (lineStr.startsWith("c9.term.ignited___")) {
-                text = t("c9.term.ignited").replace("{fuel}", lineStr.split("___")[1]);
-              } else if (t(lineStr) !== lineStr) {
-                text = t(lineStr);
-              }
-
-              const isError = lineStr.toLowerCase().includes("err") || lineStr.includes("Error");
-              const isSuccess = lineStr.includes("success") || lineStr.includes("ready") || lineStr.includes("Success");
-
-              return (
-                <div 
-                  key={idx} 
-                  className={
-                    isError ? "text-destructive" : 
-                    isSuccess ? "text-success" : 
-                    "text-primary/80"
-                  }
-                >
-                  {text}
-                </div>
-              );
-            })}
+          <div ref={terminalRef} className="flex h-32 flex-col gap-1 overflow-y-auto rounded bg-black/50 p-3 custom-scrollbar">
+            {outputLines.map((line, idx) => (
+              <div 
+                key={idx} 
+                className={
+                  line.includes('err') || line.includes('aborted') ? 'text-destructive' : 
+                  line.includes('success') || line.includes('ready') ? 'text-success' : 
+                  'text-primary/80'
+                }
+              >
+                {renderTerminalLine(line)}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -242,13 +433,28 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
       <div className="flex w-full flex-col gap-6 md:w-1/4">
         {/* Top Controls */}
         <div className="flex items-center justify-end gap-4">
-          <div className="flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-3 py-1">
-            <div className="h-2 w-2 rounded-full bg-success"></div>
-            <span className="text-xs font-bold text-success">{t("c9.synced")}</span>
-          </div>
-          <Button onClick={handleRunCode} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-            <Play className="h-4 w-4" />
-            {t("c9.runCode")}
+          {isSyncing ? (
+            <div className="flex items-center gap-2 rounded-full border border-yellow-500/30 bg-yellow-500/10 px-3 py-1 transition-all duration-300">
+              <div className="h-2 w-2 rounded-full bg-yellow-400 animate-pulse"></div>
+              <span className="text-xs font-bold text-yellow-500">{t("c9.syncing")}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-3 py-1 transition-all duration-300">
+              <div className="h-2 w-2 rounded-full bg-success"></div>
+              <span className="text-xs font-bold text-success">{t("c9.synced")}</span>
+            </div>
+          )}
+          <Button 
+            onClick={handleRunCode} 
+            disabled={isRunning}
+            className={`gap-2 ${isRunning ? 'opacity-50 cursor-not-allowed' : 'bg-primary hover:bg-primary/90'} text-primary-foreground`}
+          >
+            {isRunning ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
+            {isRunning ? t("c9.syncing") : t("c9.runCode")}
           </Button>
         </div>
 
@@ -259,7 +465,9 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
               {t("c9.liveView")}
             </h3>
             <div className="flex gap-2">
-               <RefreshCw className="h-4 w-4 text-muted-foreground" />
+               <Button variant="ghost" size="icon" onClick={resetLiveView} className="h-8 w-8 hover:bg-background/50">
+                 <RefreshCw className="h-4 w-4 text-muted-foreground" />
+               </Button>
             </div>
           </div>
 
@@ -280,6 +488,16 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
 
           {/* Stats */}
           <div className="mt-8 space-y-5">
+            <div className="mb-4">
+              <div className="mb-1 flex justify-between text-xs font-bold tracking-wider text-muted-foreground">
+                <span>{t("c9.target")}</span>
+                <span className="text-cyan-400 truncate max-w-[120px] text-right">
+                  {destDisplay || t("c9.unknown")}
+                </span>
+              </div>
+              <div className="h-px w-full bg-border" />
+            </div>
+
             <div>
               <div className="mb-2 flex justify-between text-xs font-bold tracking-wider text-muted-foreground">
                 <span>{t("c9.velocity")}</span>
@@ -296,12 +514,14 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
             <div>
               <div className="mb-2 flex justify-between text-xs font-bold tracking-wider text-muted-foreground">
                 <span>{t("c9.fuelCapacity")}</span>
-                <span>{fuelCapacity}%</span>
+                <span className={hasValidValue ? "text-cyan-400" : "text-destructive animate-pulse"}>
+                  {fuelCapacity}% {!hasValidValue && "(!)"}
+                </span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                 <div 
-                  className="h-full bg-cyber-cyan transition-all duration-500"
-                  style={{ width: `${fuelCapacity}%` }}
+                  className={`h-full transition-all duration-500 ${hasValidValue ? 'bg-cyber-cyan shadow-[0_0_10px_rgba(34,211,238,0.5)]' : 'bg-destructive shadow-[0_0_10px_rgba(239,68,68,0.5)]'}`}
+                  style={{ width: `${Math.min(100, Math.max(0, fuelCapacity))}%` }}
                 ></div>
               </div>
             </div>
@@ -314,7 +534,7 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
                 <span className="font-bold">{t("c9.success")}</span>
               </div>
               <Button onClick={() => onNavigate("landing")} variant="outline" size="sm" className="w-full">
-                Back to Mission Map
+                {t("c9.backToMap")}
               </Button>
             </div>
           )}

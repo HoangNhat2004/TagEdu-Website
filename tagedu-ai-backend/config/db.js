@@ -10,6 +10,7 @@ const db = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+  timezone: 'Z',
   ssl: {
     rejectUnauthorized: false // Yêu cầu SSL từ Aiven (để false để tránh lỗi thiếu file chứng chỉ CA khi chạy localhost)
   }
