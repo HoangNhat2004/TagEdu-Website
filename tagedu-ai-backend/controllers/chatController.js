@@ -1,6 +1,14 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const db = require('../config/db');
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const getApiKeys = () => {
+  const keysRaw = process.env.GEMINI_API_KEY || "";
+  const keys = keysRaw.split(",").map(k => k.trim()).filter(k => k !== "");
+  if (keys.length === 0) throw new Error("Chưa cấu hình GEMINI_API_KEY trong .env");
+  return keys;
+};
+
+// Lưu vết con trỏ Key hiện tại để xoay vòng
+let currentKeyIndex = 0;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -9,20 +17,39 @@ const shouldRetryGeminiError = (error) => {
   return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
 };
 
-const streamGeminiWithRetry = async (chat, message, maxRetries = 2) => {
+const streamGeminiWithRotationAndRetry = async (chatHistory, systemInstruction, message, maxRetries = 3) => {
   let attempt = 0;
   let lastError = null;
+  const keys = getApiKeys();
 
   while (attempt <= maxRetries) {
     try {
+      // Pick key xoay vòng (Round Robin)
+      const selectedKey = keys[currentKeyIndex];
+      const genAI = new GoogleGenerativeAI(selectedKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", systemInstruction });
+      const chat = model.startChat({ history: chatHistory });
+      
       return await chat.sendMessageStream(message);
     } catch (error) {
       lastError = error;
+      const status = Number(error?.status);
+      
+      console.log(`[Cảnh báo API] Key ${currentKeyIndex + 1} báo lỗi: ${status}`);
+
+      // Nếu lỗi 429 (Hết Quota) VÀ có nhiều hơn 1 API Key -> Lập tức hoán đổi Key khác và thử lại KHÔNG CẦN ĐỢI!
+      if (status === 429 && keys.length > 1) {
+          currentKeyIndex = (currentKeyIndex + 1) % keys.length;
+          console.log(`[API Rotation] 🔄 Chuyển sang Key số ${currentKeyIndex + 1} và thực thi lại lập tức!`);
+          attempt += 1;
+          continue; 
+      }
+      
       if (!shouldRetryGeminiError(error) || attempt === maxRetries) {
         throw error;
       }
 
-      // Exponential backoff: 600ms, 1200ms, ...
+      // Nếu chỉ có 1 Key mà cạn Quota, hoặc lỗi Mạng (500, 503) -> Chờ một chút rồi thử lại
       const delayMs = 600 * Math.pow(2, attempt);
       await sleep(delayMs);
       attempt += 1;
@@ -97,7 +124,7 @@ exports.handleChat = async (req, res) => {
     } else if (challengeId === "challenge9") {
       challengeContext = "The student is working on Mission Orbit 01 (Python). The task is to define a 'fuelLevel' variable (value 0-100) and invoke 'calculateTrajectory()'. Guide them on Python syntax if asked, but NEVER give direct code answers.";
     } else {
-      challengeContext = "The student is on the TagEdu Homepage. Briefly and engagingly introduce the platform and encourage them to click on the coding challenges to get started.";
+      challengeContext = "The student is on the TagEdu Homepage. Briefly and engagingly introduce the platform as a diverse learning environment to master Computer Science foundations (like Software logic, IT concepts) and Programming concepts (like Python) through progressive interactive challenges (from drag-and-drop to actual coding). Encourage them to dive into the Mission Map.";
     }
 
     systemInstruction = `
@@ -106,7 +133,7 @@ exports.handleChat = async (req, res) => {
       [CORE PRINCIPLES]:
       1. You must NEVER give direct answers or write code for the student under any circumstances.
       2. You may only suggest thinking approaches, explain logic, give similar examples, and ask open-ended questions so the student thinks for themselves.
-      3. Always be friendly and motivating. Use "I" for yourself and "you" for the student.
+      3. Always be friendly and motivating. Use "I" for yourself and "you" for the student. DO NOT repeat greetings (e.g., "Hello") if the conversation is already ongoing.
       4. Keep responses concise and well-structured. Use Markdown (bold, bullet points) for readability.
       5. Always respond in the same language the student used in their message. If they ask in Vietnamese, respond in Vietnamese. If they ask in English, respond in English.
     `;
@@ -119,7 +146,7 @@ exports.handleChat = async (req, res) => {
     } else if (challengeId === "challenge9") {
       challengeContext = "Học viên đang làm Thử thách Nhiệm vụ Quỹ đạo 01 (Python). Họ cần khai báo biến 'fuelLevel' (0-100) và gọi hàm 'calculateTrajectory()'. Hãy hướng dẫn cú pháp Python nếu cần, tuyệt đối không viết code sẵn.";
     } else {
-      challengeContext = "Học viên đang ở Trang chủ TagEdu. Hãy giới thiệu ngắn gọn, hấp dẫn về nền tảng và khuyến khích họ click vào các thử thách lập trình để bắt đầu.";
+      challengeContext = "Học viên đang ở Trang chủ TagEdu. Hãy giới thiệu ngắn gọn, hấp dẫn về nền tảng như một môi trường để học hỏi các nền tảng Khoa học Máy tính (Khái niệm IT, Logic phần mềm) và Lập trình (Python) thông qua các thử thách tương tác đa dạng (từ kéo thả, trắc nghiệm cho đến viết code). Khuyến khích họ bắt đầu khám phá Bản đồ Thử thách (Mission Map).";
     }
 
     systemInstruction = `
@@ -128,7 +155,7 @@ exports.handleChat = async (req, res) => {
       [NGUYÊN TẮC CỐT LÕI]: 
       1. Tuyệt đối KHÔNG ĐƯỢC đưa ra đáp án trực tiếp hoặc viết code hộ dưới mọi hình thức.
       2. Chỉ được phép gợi ý tư duy, giải thích logic, đưa ra ví dụ tương tự và đặt câu hỏi mở để học viên tự suy nghĩ.
-      3. Luôn xưng "mình" và gọi người dùng là "bạn" một cách thân thiện, tạo động lực.
+      3. Luôn xưng "mình" và gọi người dùng là "bạn" một cách thân thiện, tạo động lực. KHÔNG lặp lại các câu chào hỏi (ví dụ: "Chào bạn") nếu cuộc trò chuyện đã bắt đầu. Hãy đi thẳng vào vấn đề.
       4. Trình bày ngắn gọn, súc tích, sử dụng Markdown (in đậm, bullet points) cho dễ đọc.
       5. Luôn trả lời bằng chính ngôn ngữ mà học viên sử dụng. Nếu học viên hỏi bằng tiếng Việt thì trả lời bằng tiếng Việt. Nếu hỏi bằng tiếng Anh thì trả lời bằng tiếng Anh.
     `;
@@ -154,9 +181,7 @@ exports.handleChat = async (req, res) => {
       [userId, challengeId, sessionId, 'user', message]
     );
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", systemInstruction });
-    const chat = model.startChat({ history: chatHistory });
-    const resultStream = await streamGeminiWithRetry(chat, message, 2);
+    const resultStream = await streamGeminiWithRotationAndRetry(chatHistory, systemInstruction, message, 3);
     let fullAiResponse = "";
 
     for await (const chunk of resultStream.stream) {

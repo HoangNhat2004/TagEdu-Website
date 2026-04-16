@@ -16,8 +16,10 @@ export function useChatbot(currentView: View, isOpen: boolean) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
+  const [isFetchingHistory, setIsFetchingHistory] = useState(false);
   const { t, language } = useI18n();
   const historyLoadSeqRef = useRef(0);
+  const lastFetchIdRef = useRef("");
   
   const [authTrigger, setAuthTrigger] = useState(0);
 
@@ -28,6 +30,14 @@ export function useChatbot(currentView: View, isOpen: boolean) {
   }, []);
 
   useEffect(() => {
+    const isGeneralView = ["landing", "progress", "settings"].includes(currentView);
+    const newFetchId = isGeneralView ? "landing" : currentView;
+
+    if (newFetchId !== lastFetchIdRef.current) {
+      setMessages([]); // Xoá trắng bóng chat phòng cũ để tránh hiện tượng lưu ảnh (flash) sang phòng mới
+      lastFetchIdRef.current = newFetchId;
+    }
+
     setIsLoading(false);
     setIsThinking(false);
     setInputValue("");
@@ -105,7 +115,13 @@ export function useChatbot(currentView: View, isOpen: boolean) {
       }
 
       try {
-        const response = await fetch(`${API_URL}/chat-history?challengeId=${currentView}&sessionId=default_session`, {
+      // Nhóm các màn hình ngoài sảnh (Home, Progress, Settings) về chung một phòng tên là 'landing' để kế thừa lịch sử cũ
+      const isGeneralView = ["landing", "progress", "settings"].includes(currentView);
+      const fetchId = isGeneralView ? "landing" : currentView;
+
+      setIsFetchingHistory(true);
+
+      const response = await fetch(`${API_URL}/chat-history?challengeId=${fetchId}&sessionId=default_session`, {
           headers: { ...getAuthHeader() }
         });
         const data = await response.json();
@@ -128,6 +144,8 @@ export function useChatbot(currentView: View, isOpen: boolean) {
         }
       } catch (error) {
         console.error("Lỗi khi tải lịch sử chat:", error);
+      } finally {
+        setIsFetchingHistory(false);
       }
     };
 
@@ -136,10 +154,13 @@ export function useChatbot(currentView: View, isOpen: boolean) {
 
   const handleClearChat = async () => {
     try {
+      const isGeneralView = ["landing", "progress", "settings"].includes(currentView);
+      const deleteId = isGeneralView ? "landing" : currentView;
+
       const response = await fetch(`${API_URL}/chat-session`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json", ...getAuthHeader() },
-        body: JSON.stringify({ challengeId: currentView, sessionId: "default_session" }),
+        body: JSON.stringify({ challengeId: deleteId, sessionId: "default_session" }),
       });
 
       if (response.ok) {
@@ -190,10 +211,13 @@ export function useChatbot(currentView: View, isOpen: boolean) {
     setIsThinking(true);
 
     try {
+      const isGeneralView = ["landing", "progress", "settings"].includes(currentView);
+      const saveId = isGeneralView ? "landing" : currentView;
+
       const response = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getAuthHeader() },
-        body: JSON.stringify({ challengeId: currentView, sessionId: "default_session", message: messageToSend, language }),
+        body: JSON.stringify({ challengeId: saveId, sessionId: "default_session", message: messageToSend, language }),
       });
 
       if (!response.ok) {
@@ -241,7 +265,7 @@ export function useChatbot(currentView: View, isOpen: boolean) {
       }
 
       try {
-        const histRes = await fetch(`${API_URL}/chat-history?challengeId=${currentView}&sessionId=default_session`, {
+        const histRes = await fetch(`${API_URL}/chat-history?challengeId=${saveId}&sessionId=default_session`, {
           headers: { ...getAuthHeader() }
         });
         if (histRes.ok) {
@@ -269,6 +293,7 @@ export function useChatbot(currentView: View, isOpen: boolean) {
     setInputValue,
     isLoading,
     isThinking,
+    isFetchingHistory,
     isLoggedIn,
     activeUserId,
     handleSend,

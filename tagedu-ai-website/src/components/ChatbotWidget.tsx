@@ -28,6 +28,7 @@ export function ChatbotWidget({ currentView }: ChatbotProps) {
     setInputValue,
     isLoading,
     isThinking,
+    isFetchingHistory,
     isLoggedIn,
     activeUserId,
     handleSend,
@@ -121,6 +122,12 @@ export function ChatbotWidget({ currentView }: ChatbotProps) {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 bg-[#0a0e1a]/80 backdrop-blur-sm">
           <div className="flex flex-col gap-5">
+            {isFetchingHistory && messages.length === 0 && (
+              <div className="flex justify-center items-center py-10 opacity-70">
+                <Loader2 className="w-6 h-6 text-cyan-500 animate-spin" />
+              </div>
+            )}
+            
             {messages.map((msg) => {
               if (msg.role === "ai" && msg.content === "" && isThinking) return null;
               return (
@@ -207,17 +214,17 @@ export function ChatbotWidget({ currentView }: ChatbotProps) {
                     </div>
 
                     {/* Feedback */}
-                    {msg.role === "ai" && !isLoading && msg.id !== "guest-welcome" && msg.id !== "error-auth" && !msg.id.startsWith("welcome-") && (
-                      <div className="flex items-center gap-1 mt-1.5 ml-1 opacity-50 hover:opacity-100 transition-opacity">
+                    {msg.role === "ai" && !isLoading && msg.id !== "guest-welcome" && msg.id !== "error-auth" && !msg.id.startsWith("welcome-") && !msg.id.startsWith("ai-") && (
+                      <div className={`flex items-center gap-1 mt-1.5 ml-1 transition-opacity ${msg.feedback ? "opacity-100" : "opacity-50 hover:opacity-100"}`}>
                         <button
                           onClick={() => handleFeedback(msg.id, "up")}
-                          className={`p-1 rounded transition-colors ${msg.feedback === "up" ? "text-green-400 bg-green-500/20" : "text-gray-500 hover:text-green-400 hover:bg-green-500/10"}`}
+                          className={`p-1 rounded transition-colors ${msg.feedback === "up" ? "text-green-300 bg-green-500/30" : "text-gray-500 hover:text-green-400 hover:bg-green-500/10"}`}
                         >
                           <ThumbsUp className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => handleFeedback(msg.id, "down")}
-                          className={`p-1 rounded transition-colors ${msg.feedback === "down" ? "text-red-400 bg-red-500/20" : "text-gray-500 hover:text-red-400 hover:bg-red-500/10"}`}
+                          className={`p-1 rounded transition-colors ${msg.feedback === "down" ? "text-red-300 bg-red-500/30" : "text-gray-500 hover:text-red-400 hover:bg-red-500/10"}`}
                         >
                           <ThumbsDown className="h-3.5 w-3.5" />
                         </button>

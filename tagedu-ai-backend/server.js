@@ -28,9 +28,15 @@ app.use('/api/admin', adminRoutes);
 app.use('/api', progressRoutes);
 app.use('/api/users', userRoutes); // [THÊM MỚI] Sử dụng route người dùng
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error("🔥 Lỗi Unhandled Rejection (có thể từ luồng Stream của Gemini):", reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error("🔥 Lỗi Uncaught Exception:", error);
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server đang chạy tại http://0.0.0.0:${PORT}`);
-
-  // --- Đã gỡ bỏ SELF-PING vì vi phạm chính sách của Render, gây lỗi 521 ---
 });
