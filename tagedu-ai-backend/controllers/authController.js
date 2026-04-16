@@ -121,6 +121,10 @@ exports.forgotPassword = async (req, res) => {
       throw new Error("Missing GOOGLE_SCRIPT_URL in .env");
     }
 
+    // [THÊM MỚI] Cài đặt Timeout 15 giây cho trường hợp Server Google bị treo
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     const response = await fetch(scriptUrl, {
       method: 'POST',
       headers: {
@@ -130,8 +134,11 @@ exports.forgotPassword = async (req, res) => {
         to: email,
         otp: otp,
         language: lang
-      })
+      }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`Google Script returned ${response.status}`);

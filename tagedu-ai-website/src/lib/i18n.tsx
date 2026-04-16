@@ -183,7 +183,7 @@ const translations: Record<Language, Translations> = {
     "c8.q5": "The ship's system needs software to continuously monitor engine temperatures.",
 
     // Challenge 9
-    "c9.title": "Mission 3: Conditional Comets",
+    "c9.title": "Challenge 3: Conditional Comets",
     "c9.briefTitle": "Mission Brief",
     "c9.briefText": "Explorer, the Orion-9 is idling. To break orbit, we need to initialize the trajectory calculation script.",
     "c9.task1": "Define `fuelLevel`",

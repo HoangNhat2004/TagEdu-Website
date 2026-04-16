@@ -3,6 +3,7 @@ import { Radar, Calculator, Map, Camera, ShieldCheck, Thermometer } from "lucide
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
+import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -64,7 +65,7 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
         if (!token) return; // Nếu chưa đăng nhập thì không lưu
 
         try {
-          await fetch(`${API_URL}/progress/complete`, {
+          const res = await fetch(`${API_URL}/progress/complete`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -72,9 +73,11 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
             },
             body: JSON.stringify({ challengeId: "challenge8" }), // Mã ID của Thử thách 2
           });
+          if (!res.ok) throw new Error("Failed to save via API");
           console.log("Đã lưu tiến độ Thử thách 2 thành công!");
         } catch (error) {
           console.error("Lỗi khi lưu tiến độ:", error);
+          toast.error("Không thể lưu tiến trình. Xin kiểm tra kết nối mạng!");
         }
       };
 

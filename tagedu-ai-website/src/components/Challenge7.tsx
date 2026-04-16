@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { Check, Monitor, Cpu, ShieldCheck, Database, Globe, FileText, Music, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
+import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -62,8 +63,10 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
             },
             body: JSON.stringify({ challengeId: "challenge7" }),
           });
+          if (!res.ok) throw new Error("Failed to save via API");
         } catch (error) {
           console.error("Lỗi khi lưu tiến độ:", error);
+          toast.error("Không thể lưu tiến trình. Xin kiểm tra kết nối mạng!");
         }
       };
       saveProgress();

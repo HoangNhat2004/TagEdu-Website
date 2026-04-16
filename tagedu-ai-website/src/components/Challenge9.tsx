@@ -6,6 +6,7 @@ import { oneDark } from "@codemirror/theme-one-dark";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { InlineChatbot } from "./InlineChatbot";
+import { toast } from "sonner";
 
 interface ChallengeProps {
   onNavigate: (view: any) => void;
@@ -193,11 +194,13 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
             },
             body: JSON.stringify({ challengeId: "challenge9" }),
           });
+          if (!res.ok) throw new Error("Failed to save via API");
           
           // Phát sự kiện để cập nhật lại Bản đồ nhiệm vụ và thanh tiến độ ngay lập tức
           window.dispatchEvent(new Event("auth_change"));
         } catch (error) {
           console.error("Lỗi khi lưu tiến độ:", error);
+          toast.error("Không thể lưu tiến trình. Xin kiểm tra kết nối mạng!");
         }
       };
       saveProgress();

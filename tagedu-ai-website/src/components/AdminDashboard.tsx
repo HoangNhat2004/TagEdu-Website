@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Users, MessageSquare, Trash2, ShieldAlert, Loader2, ChevronLeft, ChevronRight, AlertTriangle, Target, Eye, X, Bot, User as UserIcon, ThumbsUp, ThumbsDown, Search } from "lucide-react"; 
 import { Button } from "./ui/button";
 import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useI18n } from "@/lib/i18n";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -40,6 +42,14 @@ export function AdminDashboard() {
       const resStats = await fetch(`${API_URL}/admin/stats`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
+
+      if (resStats.status === 401 || resStats.status === 403) {
+        localStorage.removeItem("tagedu_token");
+        localStorage.removeItem("tagedu_user");
+        window.location.href = "/";
+        return;
+      }
+
       if (resStats.ok) setStats(await resStats.json());
 
       const resUsers = await fetch(`${API_URL}/admin/users`, {
@@ -431,7 +441,34 @@ export function AdminDashboard() {
                                   strong: ({node, ...props}) => <strong className="font-bold tracking-wide" {...props} />,
                                   ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
                                   ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2 space-y-1 text-cyan-200" {...props} />,
-                                  li: ({node, ...props}) => <li className="pl-1" {...props} />
+                                  li: ({node, ...props}) => <li className="pl-1" {...props} />,
+                                  code: ({ node, className, children, ...props }) => {
+                                    const match = /language-(\w+)/.exec(className || "");
+                                    const isInline = !match && !String(children).includes("\n");
+                                    const { ref, ...rest } = props as any;
+                                    return isInline ? (
+                                      <code className="bg-white/10 text-cyan-300 px-1.5 py-0.5 rounded-md text-[13px] font-mono border border-white/5" {...rest}>
+                                        {children}
+                                      </code>
+                                    ) : (
+                                      <div className="my-3 rounded-lg overflow-hidden border border-white/10 bg-[#0d1117] shadow-inner text-left max-w-full">
+                                        {match && (
+                                          <div className="bg-[#161b22] px-3 py-1.5 text-xs text-gray-400 border-b border-white/5">
+                                            {match[1]}
+                                          </div>
+                                        )}
+                                        <SyntaxHighlighter
+                                          style={vscDarkPlus as any}
+                                          language={match ? match[1] : "text"}
+                                          PreTag="div"
+                                          customStyle={{ margin: 0, padding: "12px", fontSize: "13px", background: "transparent" }}
+                                          {...rest}
+                                        >
+                                          {String(children).replace(/\n$/, "")}
+                                        </SyntaxHighlighter>
+                                      </div>
+                                    );
+                                  },
                                 }}
                               >
                                 {log.content}

@@ -220,8 +220,15 @@ export function useChatbot(currentView: View, isOpen: boolean) {
               try {
                 const parsed = JSON.parse(dataStr);
                 if (parsed.text) {
-                  aiText += parsed.text;
-                  setMessages((prev) => prev.map((msg) => msg.id === aiMsgId ? { ...msg, content: aiText } : msg));
+                  const textChunk = parsed.text;
+                  // Hiệu ứng "Typewriter": Thêm dần từng cụm từ nhỏ thay vì ụp nguyên cục vào
+                  const charsPerTick = 4; 
+                  for (let i = 0; i < textChunk.length; i += charsPerTick) {
+                    aiText += textChunk.slice(i, i + charsPerTick);
+                    setMessages((prev) => prev.map((msg) => msg.id === aiMsgId ? { ...msg, content: aiText } : msg));
+                    // Nghỉ 10ms cho mỗi cụm 4 ký tự -> tốc độ rất nhanh nhưng vẫn có dòng chảy
+                    await new Promise(r => setTimeout(r, 10));
+                  }
                 }
               } catch (e) {}
             }
