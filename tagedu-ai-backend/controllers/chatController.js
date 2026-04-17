@@ -27,8 +27,8 @@ const streamGeminiWithRotationAndRetry = async (chatHistory, systemInstruction, 
       // Pick key xoay vòng (Round Robin)
       const selectedKey = keys[currentKeyIndex];
       const genAI = new GoogleGenerativeAI(selectedKey);
-      // [SỬA] Đổi sang model chuẩn gemini-1.5-flash (Bản 2.5 không tồn tại)
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", systemInstruction });
+      // [SỬA] Sử dụng -latest để đảm bảo tìm đúng model trên môi trường Render v1beta
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest", systemInstruction });
       const chat = model.startChat({ history: chatHistory });
       
       return await chat.sendMessageStream(message);
@@ -38,8 +38,8 @@ const streamGeminiWithRotationAndRetry = async (chatHistory, systemInstruction, 
       
       console.log(`[Cảnh báo API] Key ${currentKeyIndex + 1} báo lỗi: ${status}`);
 
-      // Nếu lỗi 429 (Hết Quota) VÀ có nhiều hơn 1 API Key -> Lập tức hoán đổi Key khác và thử lại KHÔNG CẦN ĐỢI!
-      if (status === 429 && keys.length > 1) {
+      // Nếu lỗi 429 (Hết Quota) hoặc 404 (Sai model ở vùng này) VÀ có nhiều hơn 1 API Key -> Thử Key khác
+      if ((status === 429 || status === 404) && keys.length > 1) {
           currentKeyIndex = (currentKeyIndex + 1) % keys.length;
           console.log(`[API Rotation] 🔄 Chuyển sang Key số ${currentKeyIndex + 1} và thực thi lại lập tức!`);
           attempt += 1;
