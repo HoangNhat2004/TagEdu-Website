@@ -17,28 +17,31 @@ const shouldRetryGeminiError = (error) => {
   return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
 };
 
+const getGeminiModel = (chatHistory, systemInstruction) => {
+  const keys = getApiKeys();
+  const selectedKey = keys[currentKeyIndex];
+  const genAI = new GoogleGenerativeAI(selectedKey);
+  // Sử dụng model gemini-2.5-flash như bạn yêu cầu
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", systemInstruction });
+  const chat = model.startChat({ history: chatHistory });
+  return { chat, model };
+};
+
 const streamGeminiWithRotationAndRetry = async (chatHistory, systemInstruction, message, maxRetries = 3) => {
   let attempt = 0;
   let lastError = null;
-  const keys = getApiKeys();
 
   while (attempt <= maxRetries) {
     try {
-      // Pick key xoay vòng (Round Robin)
-      const selectedKey = keys[currentKeyIndex];
-      const genAI = new GoogleGenerativeAI(selectedKey);
-      // [SỬA] Sử dụng -latest để đảm bảo tìm đúng model trên môi trường Render v1beta
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest", systemInstruction });
-      const chat = model.startChat({ history: chatHistory });
-      
+      const { chat } = getGeminiModel(chatHistory, systemInstruction);
       return await chat.sendMessageStream(message);
     } catch (error) {
       lastError = error;
       const status = Number(error?.status);
+      const keys = getApiKeys();
       
       console.log(`[Cảnh báo API] Key ${currentKeyIndex + 1} báo lỗi: ${status}`);
 
-      // Nếu lỗi 429 (Hết Quota) hoặc 404 (Sai model ở vùng này) VÀ có nhiều hơn 1 API Key -> Thử Key khác
       if ((status === 429 || status === 404) && keys.length > 1) {
           currentKeyIndex = (currentKeyIndex + 1) % keys.length;
           console.log(`[API Rotation] 🔄 Chuyển sang Key số ${currentKeyIndex + 1} và thực thi lại lập tức!`);
@@ -46,17 +49,13 @@ const streamGeminiWithRotationAndRetry = async (chatHistory, systemInstruction, 
           continue; 
       }
       
-      if (!shouldRetryGeminiError(error) || attempt === maxRetries) {
-        throw error;
-      }
+      if (!shouldRetryGeminiError(error) || attempt === maxRetries) throw error;
 
-      // Nếu chỉ có 1 Key mà cạn Quota, hoặc lỗi Mạng (500, 503) -> Chờ một chút rồi thử lại
       const delayMs = 600 * Math.pow(2, attempt);
       await sleep(delayMs);
       attempt += 1;
     }
   }
-
   throw lastError;
 };
 
@@ -184,21 +183,40 @@ exports.handleChat = async (req, res) => {
       [userId, challengeId, sessionId, 'user', message]
     );
 
-    const resultStream = await streamGeminiWithRotationAndRetry(chatHistory, systemInstruction, message, 3);
-    let fullAiResponse = "";
+    let resultStream;
+    try {
+      resultStream = await streamGeminiWithRotationAndRetry(chatHistory, systemInstruction, message, 3);
+    } catch (error) {
+      console.error("❌ Lỗi khi khởi tạo stream:", error);
+      throw error;
+    }
 
-    for await (const chunk of resultStream.stream) {
-      try {
-        const chunkText = chunk.text();
-        fullAiResponse += chunkText; 
-        res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
-      } catch (streamErr) {
-        // [BỔ SUNG] Bắt lỗi nếu stream bị chặn giữa chừng (ví dụ do vi phạm chính sách nội dung)
-        console.error("⚠️ Lỗi trích xuất text từ chunk stream:", streamErr);
+    let fullAiResponse = "";
+    try {
+      for await (const chunk of resultStream.stream) {
+        try {
+          const chunkText = chunk.text();
+          fullAiResponse += chunkText; 
+          res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
+        } catch (streamErr) {
+          console.error("⚠️ Lỗi trích xuất text từ chunk stream:", streamErr);
+        }
+      }
+    } catch (iterError) {
+      // [FALLBACK] Nếu đang stream mà bị lỗi "Failed to parse stream", tự động chuyển sang chat thường
+      if (iterError.message.includes("Failed to parse stream") || iterError.message.includes("stream")) {
+        console.log("🔄 Phát hiện lỗi Stream, đang thử Fallback sang chế độ chat thường...");
+        const { chat } = getGeminiModel(chatHistory, systemInstruction);
+        const result = await chat.sendMessage(message);
+        const fallbackText = result.response.text();
+        fullAiResponse = fallbackText;
+        res.write(`data: ${JSON.stringify({ text: fallbackText })}\n\n`);
+      } else {
+        throw iterError;
       }
     }
 
-    // Luôn lưu vào DB hoàn tất TRƯỚC KHI gửi [DONE] để Frontend loadHistory không bị mất text
+    // Luôn lưu vào DB hoàn tất TRƯỚC KHI gửi [DONE]
     await db.promise().query(
       'INSERT INTO chat_messages (user_id, challenge_id, session_id, sender_role, content) VALUES (?, ?, ?, ?, ?)',
       [userId, challengeId, sessionId, 'ai', fullAiResponse]
@@ -207,7 +225,7 @@ exports.handleChat = async (req, res) => {
     res.write('data: [DONE]\n\n');
     res.end(); 
   } catch (error) {
-    console.error("❌ Lỗi xử lý chat stream:", error);
+    console.error("❌ Lỗi xử lý chat cuối cùng:", error);
     res.write(`data: ${JSON.stringify({ error: 'Đã có lỗi xảy ra.' })}\n\n`);
     res.end();
   }
