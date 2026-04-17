@@ -91,6 +91,14 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       setErrorMsg("");
       setSuccessMsg("");
       setFieldErrors({});
+      setMode("login");
+      setForgotStep(1);
+      setFormData({
+        fullName: "",
+        email: "",
+        password: "",
+        otp: "",
+      });
     }
   }, [isOpen, language]);
 
@@ -357,7 +365,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                   </>
                 )}
 
-                <button type="submit" disabled={isLoading} className="mt-2 flex w-full items-center justify-center rounded-lg btn-cosmic py-2.5 text-sm font-semibold disabled:opacity-70">
+                <button type="submit" disabled={isLoading || successMsg === t("auth.passwordChanged")} className="mt-2 flex w-full items-center justify-center rounded-lg btn-cosmic py-2.5 text-sm font-semibold disabled:opacity-70">
                   {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (forgotStep === 1 ? t("auth.sendOtp") : t("auth.changePasswordBtn"))}
                 </button>
 
@@ -428,7 +436,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                     </div>
                   )}
 
-                  <button type="submit" disabled={isLoading} className="mt-2 flex w-full items-center justify-center rounded-lg btn-cosmic py-2.5 text-sm font-semibold disabled:opacity-70">
+                  <button type="submit" disabled={isLoading || !!successMsg} className="mt-2 flex w-full items-center justify-center rounded-lg btn-cosmic py-2.5 text-sm font-semibold disabled:opacity-70">
                     {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (mode === "login" ? t("auth.loginBtn") : t("auth.registerBtn"))}
                   </button>
                 </form>

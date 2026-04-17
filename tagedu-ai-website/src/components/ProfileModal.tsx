@@ -256,7 +256,7 @@ export function ProfileModal({ isOpen, onClose, currentUser, onSuccess }: Profil
                 <p className="mt-1 text-xs text-gray-500 font-medium">{t("profile.bioHint")}</p>
               </div>
 
-              <button type="submit" disabled={isLoading || !formData.fullName.trim()} className="mt-4 flex w-full items-center justify-center rounded-lg btn-cosmic py-2.5 text-sm font-semibold disabled:opacity-70">
+              <button type="submit" disabled={isLoading || !!successMsg || !formData.fullName.trim()} className="mt-4 flex w-full items-center justify-center rounded-lg btn-cosmic py-2.5 text-sm font-semibold disabled:opacity-70">
                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : t("profile.saveChanges")}
               </button>
             </form>
@@ -295,7 +295,7 @@ export function ProfileModal({ isOpen, onClose, currentUser, onSuccess }: Profil
                   placeholder="••••••••"
                 />
               </div>
-              <button type="submit" disabled={isLoading} className="mt-4 flex w-full items-center justify-center rounded-lg btn-cosmic py-2.5 text-sm font-semibold disabled:opacity-70">
+              <button type="submit" disabled={isLoading || !!successMsg} className="mt-4 flex w-full items-center justify-center rounded-lg btn-cosmic py-2.5 text-sm font-semibold disabled:opacity-70">
                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : t("profile.passwordTab")}
               </button>
             </form>

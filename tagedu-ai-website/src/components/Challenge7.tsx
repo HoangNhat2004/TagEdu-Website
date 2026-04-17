@@ -55,7 +55,7 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
         const token = localStorage.getItem("tagedu_token");
         if (!token) return;
         try {
-          await fetch(`${API_URL}/progress/complete`, {
+          const res = await fetch(`${API_URL}/progress/complete`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
