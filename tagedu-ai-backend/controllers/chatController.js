@@ -27,7 +27,8 @@ const streamGeminiWithRotationAndRetry = async (chatHistory, systemInstruction, 
       // Pick key xoay vòng (Round Robin)
       const selectedKey = keys[currentKeyIndex];
       const genAI = new GoogleGenerativeAI(selectedKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", systemInstruction });
+      // [SỬA] Đổi sang model chuẩn gemini-1.5-flash (Bản 2.5 không tồn tại)
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", systemInstruction });
       const chat = model.startChat({ history: chatHistory });
       
       return await chat.sendMessageStream(message);
@@ -164,6 +165,8 @@ exports.handleChat = async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  // [BỔ SUNG] Chống đệm trên Render để stream không bị ngắt quãng
+  res.setHeader('X-Accel-Buffering', 'no');
 
   try {
     const [historyRows] = await db.promise().query(
@@ -185,9 +188,14 @@ exports.handleChat = async (req, res) => {
     let fullAiResponse = "";
 
     for await (const chunk of resultStream.stream) {
-      const chunkText = chunk.text();
-      fullAiResponse += chunkText; 
-      res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
+      try {
+        const chunkText = chunk.text();
+        fullAiResponse += chunkText; 
+        res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
+      } catch (streamErr) {
+        // [BỔ SUNG] Bắt lỗi nếu stream bị chặn giữa chừng (ví dụ do vi phạm chính sách nội dung)
+        console.error("⚠️ Lỗi trích xuất text từ chunk stream:", streamErr);
+      }
     }
 
     // Luôn lưu vào DB hoàn tất TRƯỚC KHI gửi [DONE] để Frontend loadHistory không bị mất text
