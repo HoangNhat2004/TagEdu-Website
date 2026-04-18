@@ -34,7 +34,15 @@ ${t("c9.code.task3")}
 
 export default function Challenge9({ onNavigate }: ChallengeProps) {
   const { t } = useI18n();
-  const [code, setCode] = useState(() => getInitialCode(t));
+  const [code, setCode] = useState(() => {
+    const savedCode = localStorage.getItem("tagedu_c9_draft_code");
+    return savedCode || getInitialCode(t);
+  });
+  
+  // Auto-save code to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("tagedu_c9_draft_code", code);
+  }, [code]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [outputLines, setOutputLines] = useState<string[]>([]);
   const [isSuccess, setIsSuccess] = useState(false);
