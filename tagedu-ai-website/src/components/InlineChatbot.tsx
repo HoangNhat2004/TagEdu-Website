@@ -33,16 +33,18 @@ export function InlineChatbot({ currentView }: InlineChatbotProps) {
     getQuickReplies,
   } = useChatbot(currentView, true);
 
+  // [CẢI TIẾN] Cuộn đuổi theo nội dung trả về của AI để tăng tính thực tế
   useEffect(() => {
-    // Chỉ cuộn bên trong container của chatbot, không dùng scrollIntoView để tránh kéo trang web xuống
     const container = messagesEndRef.current?.closest('.overflow-y-auto');
     if (container) {
+      // Sử dụng "auto" khi đang chạy chữ để cuộn mượt và tức thời hơn, không bị giật
+      const behavior = isThinking ? "smooth" : "auto";
       container.scrollTo({
         top: container.scrollHeight,
-        behavior: "smooth"
+        behavior
       });
     }
-  }, [messages.length, isThinking]);
+  }, [messages, isThinking]);
 
   // Auto-resize textarea
   useEffect(() => {

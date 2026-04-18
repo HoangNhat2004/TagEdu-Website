@@ -37,11 +37,14 @@ export function ChatbotWidget({ currentView }: ChatbotProps) {
     getQuickReplies,
   } = useChatbot(currentView, isOpen);
 
+  // [CẢI TIẾN] Cuộn trang thông minh: Đuổi theo nội dung đang chạy (Streaming)
   useEffect(() => {
     if (isOpen) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      // Ưu tiên "smooth" khi chuyển trạng thái lớn hoặc mới mở, "auto" khi đang chạy chữ để mượt hơn
+      const behavior = (isThinking || messages.length === 0) ? "smooth" : "auto";
+      messagesEndRef.current?.scrollIntoView({ behavior });
     }
-  }, [messages.length, isThinking, isOpen]);
+  }, [messages, isThinking, isOpen]);
 
   // Auto-resize textarea
   useEffect(() => {

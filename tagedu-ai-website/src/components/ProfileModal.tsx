@@ -106,6 +106,11 @@ export function ProfileModal({ isOpen, onClose, currentUser, onSuccess }: Profil
           onClose();
         }, 1500);
       } else {
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem("tagedu_token");
+          localStorage.removeItem("tagedu_user");
+          window.dispatchEvent(new Event("auth_change"));
+        }
         throw new Error(data.error || t("auth.error"));
       }
     } catch (error: any) {
@@ -162,6 +167,11 @@ export function ProfileModal({ isOpen, onClose, currentUser, onSuccess }: Profil
           onClose();
         }, 2000);
       } else {
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem("tagedu_token");
+          localStorage.removeItem("tagedu_user");
+          window.dispatchEvent(new Event("auth_change"));
+        }
         throw new Error(data.error || t("auth.error"));
       }
     } catch (error: any) {
@@ -213,7 +223,7 @@ export function ProfileModal({ isOpen, onClose, currentUser, onSuccess }: Profil
         <div className="p-6 flex-1 overflow-y-auto max-h-[60vh]">
           {errorMsg && (
             <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-500/10 p-3 text-sm text-red-400 border border-red-500/20 animate-in fade-in">
-              <AlertCircle className="h-4 w-4 shrink-0" /> <p>{errorMsg}</p>
+              <AlertCircle className="h-4 w-4 shrink-0" /> <p>{t(errorMsg)}</p>
             </div>
           )}
           {successMsg && (

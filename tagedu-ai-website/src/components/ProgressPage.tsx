@@ -24,6 +24,10 @@ export function ProgressPage() {
             if (item.is_completed) progressMap[item.challenge_id] = true;
           });
           setCompletedChallenges(progressMap);
+        } else if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem("tagedu_token");
+          localStorage.removeItem("tagedu_user");
+          window.dispatchEvent(new Event("auth_change"));
         }
       } catch (err) {
         console.error("Error fetching progress:", err);

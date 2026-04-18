@@ -118,6 +118,9 @@ const translations: Record<Language, Translations> = {
     "auth.passwordChanged": "Password changed successfully! Redirecting to login...",
     "auth.googleFailed": "Google login failed",
     "auth.error": "An error occurred",
+    "auth.sessionExpired": "Invalid session or has expired. Please log in again.",
+    "auth.userNotFound": "User account not found or has been deleted.",
+    "auth.loginRequired": "You need to log in to perform this action.",
     "auth.validation.nameRequired": "Please enter your full name.",
     "auth.validation.emailRequired": "Please enter your email address.",
     "auth.validation.emailInvalid": "Email address is not valid.",
@@ -146,6 +149,8 @@ const translations: Record<Language, Translations> = {
     "profile.fillAll": "Please fill in all password fields.",
     "profile.passwordMismatch": "Passwords do not match.",
     "profile.passwordMinLength": "New password must be at least 6 characters.",
+    "challenge.saveError": "Could not save progress. Please try again later.",
+    "challenge.networkError": "Could not save progress. Please check your network connection!",
 
     // Challenge 7
     "c7.title": "Challenge 1: Software Classification",
@@ -414,6 +419,9 @@ const translations: Record<Language, Translations> = {
     "auth.passwordChanged": "Đổi mật khẩu thành công! Đang chuyển về đăng nhập...",
     "auth.googleFailed": "Đăng nhập Google thất bại",
     "auth.error": "Có lỗi xảy ra",
+    "auth.sessionExpired": "Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
+    "auth.userNotFound": "Tài khoản không tồn tại hoặc đã bị xóa.",
+    "auth.loginRequired": "Bạn cần đăng nhập để thực hiện tác vụ này.",
     "auth.validation.nameRequired": "Vui lòng nhập họ và tên.",
     "auth.validation.emailRequired": "Vui lòng nhập địa chỉ email.",
     "auth.validation.emailInvalid": "Địa chỉ email không hợp lệ.",
@@ -442,6 +450,8 @@ const translations: Record<Language, Translations> = {
     "profile.fillAll": "Vui lòng điền đầy đủ thông tin mật khẩu.",
     "profile.passwordMismatch": "Mật khẩu xác nhận không khớp.",
     "profile.passwordMinLength": "Mật khẩu mới phải có ít nhất 6 ký tự.",
+    "challenge.saveError": "Không thể lưu tiến trình. Vui lòng thử lại sau.",
+    "challenge.networkError": "Không thể lưu tiến trình. Xin kiểm tra kết nối mạng!",
 
     // Challenge 7
     "c7.title": "Thử thách 1: Phân loại phần mềm",

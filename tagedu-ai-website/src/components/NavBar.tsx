@@ -36,7 +36,17 @@ export default function NavBar() {
       }
     };
 
+    const handleAuthChange = () => {
+      const userStr = localStorage.getItem("tagedu_user");
+      if (userStr) {
+        setCurrentUser(JSON.parse(userStr));
+      } else {
+        setCurrentUser(null);
+      }
+    };
+
     window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("auth_change", handleAuthChange);
 
     // Listen for custom event from ChatbotWidget to open auth modal
     const handleOpenAuth = () => setIsAuthModalOpen(true);
@@ -44,6 +54,7 @@ export default function NavBar() {
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("auth_change", handleAuthChange);
       window.removeEventListener("open-auth-modal", handleOpenAuth);
     };
   }, []);

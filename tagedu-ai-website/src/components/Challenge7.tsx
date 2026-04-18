@@ -63,10 +63,17 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
             },
             body: JSON.stringify({ challengeId: "challenge7" }),
           });
-          if (!res.ok) throw new Error("Failed to save via API");
+          if (!res.ok) {
+            if (res.status === 401 || res.status === 403) {
+              localStorage.removeItem("tagedu_token");
+              localStorage.removeItem("tagedu_user");
+              window.dispatchEvent(new Event("auth_change"));
+            }
+            throw new Error("Failed to save via API");
+          }
         } catch (error) {
-          console.error("Lỗi khi lưu tiến độ:", error);
-          toast.error("Không thể lưu tiến trình. Xin kiểm tra kết nối mạng!");
+          console.error(t("challenge.saveError"), error);
+          toast.error(t("challenge.networkError"));
         }
       };
       saveProgress();

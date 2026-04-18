@@ -131,11 +131,13 @@ export function useChatbot(currentView: View, isOpen: boolean) {
           setMessages(data.map((msg: any) => ({
             id: msg.id.toString(), role: msg.role, content: msg.content, feedback: msg.feedback ?? null
           })));
-        } else if (response.status === 401 || response.status === 403) {
-          if (loadSeq !== historyLoadSeqRef.current) return;
           setMessages([{
             id: "error-auth", role: "ai", content: t("chat.sessionExpired")
           }]);
+          // Tự động đăng xuất nếu nhận lỗi xác thực từ backend (ví dụ user bị xóa)
+          localStorage.removeItem("tagedu_token");
+          localStorage.removeItem("tagedu_user");
+          window.dispatchEvent(new Event("auth_change"));
         } else {
           if (loadSeq !== historyLoadSeqRef.current) return;
           setMessages([{
@@ -221,6 +223,12 @@ export function useChatbot(currentView: View, isOpen: boolean) {
       });
 
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem("tagedu_token");
+          localStorage.removeItem("tagedu_user");
+          window.dispatchEvent(new Event("auth_change"));
+          throw new Error(t("chat.sessionExpired"));
+        }
         throw new Error("API_ERROR");
       }
       if (!response.body) throw new Error("Không nhận được dữ liệu");
