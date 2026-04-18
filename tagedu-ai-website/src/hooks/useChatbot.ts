@@ -126,23 +126,32 @@ export function useChatbot(currentView: View, isOpen: boolean) {
         });
         const data = await response.json();
 
-        if (response.ok && data.length > 0) {
+        if (response.ok) {
           if (loadSeq !== historyLoadSeqRef.current) return;
-          setMessages(data.map((msg: any) => ({
-            id: msg.id.toString(), role: msg.role, content: msg.content, feedback: msg.feedback ?? null
-          })));
-          setMessages([{
-            id: "error-auth", role: "ai", content: t("chat.sessionExpired")
-          }]);
-          // Tự động đăng xuất nếu nhận lỗi xác thực từ backend (ví dụ user bị xóa)
-          localStorage.removeItem("tagedu_token");
-          localStorage.removeItem("tagedu_user");
-          window.dispatchEvent(new Event("auth_change"));
+          if (data && data.length > 0) {
+            setMessages(data.map((msg: any) => ({
+              id: msg.id.toString(), role: msg.role, content: msg.content, feedback: msg.feedback ?? null
+            })));
+          } else {
+            setMessages([{
+              id: "welcome-" + Date.now().toString(), role: "ai", content: getWelcomeMessage(currentView), feedback: null
+            }]);
+          }
         } else {
           if (loadSeq !== historyLoadSeqRef.current) return;
-          setMessages([{
-            id: "welcome-" + Date.now().toString(), role: "ai", content: getWelcomeMessage(currentView), feedback: null
-          }]);
+          if (response.status === 401 || response.status === 403) {
+            setMessages([{
+              id: "error-auth", role: "ai", content: t("chat.sessionExpired")
+            }]);
+            localStorage.removeItem("tagedu_token");
+            localStorage.removeItem("tagedu_user");
+            window.dispatchEvent(new Event("auth_change"));
+          } else {
+            // Các lỗi khác thì hiện lời chào mặc định
+            setMessages([{
+              id: "welcome-" + Date.now().toString(), role: "ai", content: getWelcomeMessage(currentView), feedback: null
+            }]);
+          }
         }
       } catch (error) {
         console.error("Lỗi khi tải lịch sử chat:", error);
