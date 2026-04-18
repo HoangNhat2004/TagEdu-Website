@@ -287,8 +287,17 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID} key={language}>
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm transition-all duration-300">
         <div className="relative w-full max-w-md overflow-hidden rounded-2xl glass-card border border-white/10 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-
-          <button onClick={onClose} className="absolute right-4 top-4 rounded-full p-1 text-gray-400 hover:bg-white/10 transition-colors z-10">
+          
+          {/* Determine if we are in a final completion state that warrants locking the UI */}
+          {(() => {
+            const isFinalSuccess = successMsg === t("auth.registerSuccess") || successMsg === t("auth.passwordChanged");
+            return (
+              <>
+          <button 
+            onClick={onClose} 
+            disabled={isFinalSuccess}
+            className={`absolute right-4 top-4 rounded-full p-1 text-gray-400 hover:bg-white/10 transition-all duration-300 z-10 ${isFinalSuccess ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+          >
             <X className="h-5 w-5" />
           </button>
 
@@ -369,8 +378,13 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                   {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (forgotStep === 1 ? t("auth.sendOtp") : t("auth.changePasswordBtn"))}
                 </button>
 
-                <div className="text-center mt-4">
-                  <button type="button" onClick={() => switchMode("login")} className="text-sm font-semibold text-gray-400 hover:text-cyan-400 transition-colors">
+                <div className={`text-center mt-4 transition-opacity duration-300 ${isFinalSuccess ? "opacity-30 pointer-events-none" : "opacity-100"}`}>
+                  <button 
+                    type="button" 
+                    onClick={() => switchMode("login")} 
+                    disabled={isFinalSuccess}
+                    className="text-sm font-semibold text-gray-400 hover:text-cyan-400 transition-colors"
+                  >
                     {t("auth.backToLogin")}
                   </button>
                 </div>
@@ -378,54 +392,59 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             ) : (
               <>
                 <form onSubmit={handleAuthSubmit} noValidate className="space-y-4">
-                  {/* Full Name (register only) */}
-                  {mode === "register" && (
+                   <div className={`space-y-4 transition-opacity duration-500 ${isFinalSuccess ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
+                    {/* Full Name (register only) */}
+                    {mode === "register" && (
+                      <div>
+                        <div className="relative">
+                          <UserIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+                          <input
+                            type="text"
+                            name="fullName"
+                            placeholder={t("auth.fullNamePlaceholder")}
+                            value={formData.fullName}
+                            onChange={handleChange}
+                            disabled={isFinalSuccess}
+                            className={fieldErrors.fullName ? inputClassError : inputClass}
+                          />
+                        </div>
+                        <FieldError msg={fieldErrors.fullName || ""} />
+                      </div>
+                    )}
+
+                    {/* Email */}
                     <div>
                       <div className="relative">
-                        <UserIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+                        <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
                         <input
-                          type="text"
-                          name="fullName"
-                          placeholder={t("auth.fullNamePlaceholder")}
-                          value={formData.fullName}
+                          type="email"
+                          name="email"
+                          placeholder={t("auth.emailPlaceholder")}
+                          value={formData.email}
                           onChange={handleChange}
-                          className={fieldErrors.fullName ? inputClassError : inputClass}
+                          disabled={isFinalSuccess}
+                          className={fieldErrors.email ? inputClassError : inputClass}
                         />
                       </div>
-                      <FieldError msg={fieldErrors.fullName || ""} />
+                      <FieldError msg={fieldErrors.email || ""} />
                     </div>
-                  )}
 
-                  {/* Email */}
-                  <div>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
-                      <input
-                        type="email"
-                        name="email"
-                        placeholder={t("auth.emailPlaceholder")}
-                        value={formData.email}
-                        onChange={handleChange}
-                        className={fieldErrors.email ? inputClassError : inputClass}
-                      />
+                    {/* Password */}
+                    <div>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+                        <input
+                          type="password"
+                          name="password"
+                          placeholder={t("auth.passwordPlaceholder")}
+                          value={formData.password}
+                          onChange={handleChange}
+                          disabled={isFinalSuccess}
+                          className={fieldErrors.password ? inputClassError : inputClass}
+                        />
+                      </div>
+                      <FieldError msg={fieldErrors.password || ""} />
                     </div>
-                    <FieldError msg={fieldErrors.email || ""} />
-                  </div>
-
-                  {/* Password */}
-                  <div>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
-                      <input
-                        type="password"
-                        name="password"
-                        placeholder={t("auth.passwordPlaceholder")}
-                        value={formData.password}
-                        onChange={handleChange}
-                        className={fieldErrors.password ? inputClassError : inputClass}
-                      />
-                    </div>
-                    <FieldError msg={fieldErrors.password || ""} />
                   </div>
 
                   {mode === "login" && (
@@ -436,7 +455,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                     </div>
                   )}
 
-                  <button type="submit" disabled={isLoading || !!successMsg} className="mt-2 flex w-full items-center justify-center rounded-lg btn-cosmic py-2.5 text-sm font-semibold disabled:opacity-70">
+                  <button type="submit" disabled={isLoading || isFinalSuccess} className="mt-2 flex w-full items-center justify-center rounded-lg btn-cosmic py-2.5 text-sm font-semibold disabled:opacity-70">
                     {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (mode === "login" ? t("auth.loginBtn") : t("auth.registerBtn"))}
                   </button>
                 </form>
@@ -445,19 +464,27 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                   <p className="mx-4 mb-0 text-center text-sm text-gray-500">{t("auth.or")}</p>
                 </div>
 
-                <div className="mt-5 flex justify-center">
+                <div className={`mt-5 flex justify-center transition-all duration-500 ${isFinalSuccess ? "opacity-0 pointer-events-none scale-95" : "opacity-100"}`}>
                   <GoogleLoginButton onSuccess={handleGoogleSuccess} onError={() => setErrorMsg(t("auth.googleFailed"))} label={t("auth.loginWithGoogle")} />
                 </div>
 
-                <div className="mt-6 text-center text-sm text-gray-400">
+                <div className={`mt-6 text-center text-sm text-gray-400 transition-opacity duration-500 ${isFinalSuccess ? "opacity-30 pointer-events-none" : "opacity-100"}`}>
                   {mode === "login" ? t("auth.noAccount") : t("auth.hasAccount")}
-                  <button type="button" onClick={() => switchMode(mode === "login" ? "register" : "login")} className="font-semibold text-cyan-400 hover:text-cyan-300 transition-colors">
+                  <button 
+                    type="button" 
+                    onClick={() => switchMode(mode === "login" ? "register" : "login")} 
+                    disabled={isFinalSuccess}
+                    className="font-semibold text-cyan-400 hover:text-cyan-300 transition-colors ml-1"
+                  >
                     {mode === "login" ? t("auth.registerNow") : t("auth.loginHere")}
                   </button>
                 </div>
               </>
             )}
           </div>
+        </>
+      );
+    })()}
         </div>
       </div>
     </GoogleOAuthProvider>
