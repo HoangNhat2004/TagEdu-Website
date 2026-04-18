@@ -186,7 +186,7 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
         if (!token) return;
 
         try {
-          await fetch(`${API_URL}/progress/complete`, {
+          const res = await fetch(`${API_URL}/progress/complete`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
