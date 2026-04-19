@@ -97,21 +97,23 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
               setIsCloudComplete(true);
             }
 
-            if (challengeProgress.draft_data !== null) {
+            // [HÀNH ĐỘNG] Chỉ ghi đè code từ cloud nếu KHÔNG đang chạy simulation hoặc thành công
+            // Điều này chặn việc race condition khi vừa thắng xong bị cloud sync ngược lại code cũ
+            if (challengeProgress.draft_data !== null && !isSuccess && !isRunning) {
               setIsPracticing(true);
               const cloudDraft = challengeProgress.draft_data;
               // Nếu là Reset ('{}'), khôi phục code ban đầu để đồng bộ
               if (cloudDraft === "{}" || cloudDraft === "") {
-                setCode(getInitialCode(t));
+                if (code !== getInitialCode(t)) setCode(getInitialCode(t));
               } else {
-                setCode(cloudDraft);
+                if (code !== cloudDraft) setCode(cloudDraft);
               }
-            } else {
-              // Nếu cloud trống thì reset local
+            } else if (challengeProgress.draft_data === null && !isSuccess && !isRunning) {
+              // Nếu cloud trống và không trong trạng thái quan trọng thì reset local
               setCode(getInitialCode(t));
               setIsPracticing(false);
             }
-          } else {
+          } else if (!isSuccess && !isRunning) {
             // Trường hợp không tìm thấy progress (user mới)
             setCode(getInitialCode(t));
             setIsPracticing(false);
