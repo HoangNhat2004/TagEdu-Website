@@ -429,9 +429,22 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
 
       <div className="flex w-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg md:w-1/2">
         <div className="flex items-center justify-between border-b border-border bg-background/50 px-4 py-2">
-          <div className="flex items-center gap-2 border-b-2 border-primary px-3 py-1">
-            <FileCode className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold text-foreground">main.py</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 border-b-2 border-primary px-3 py-1">
+              <FileCode className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">main.py</span>
+            </div>
+            <div className="hidden items-center gap-1.5 text-[10px] font-bold tracking-widest sm:flex uppercase">
+              {isSyncing ? (
+                <span className="flex items-center gap-1.5 text-amber-400 animate-pulse">
+                  <Loader2 className="h-3 w-3 animate-spin" /> {t("challenge.syncing")}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-success/80">
+                  <Check className="h-3 w-3" /> {t("c9.synced")}
+                </span>
+              )}
+            </div>
           </div>
           <Button
             variant="ghost"
@@ -464,11 +477,11 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
         <div className="flex items-center justify-end">
           <Button 
             onClick={handleRunCode} 
-            disabled={isRunning || isSyncing} 
-            className={`w-full gap-2 transition-all ${isRunning || isSyncing ? 'opacity-70 bg-muted cursor-not-allowed text-muted-foreground' : 'bg-primary text-primary-foreground shadow-lg hover:shadow-primary/20'}`}
+            disabled={isRunning} 
+            className={`w-full gap-2 transition-all ${isRunning ? 'opacity-70 bg-muted cursor-not-allowed text-muted-foreground' : 'bg-primary text-primary-foreground shadow-lg hover:shadow-primary/20'}`}
           >
-            {isRunning || isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-            {isSyncing ? t("challenge.syncing") : isRunning ? t("c9.runCode") : t("c9.runCode")}
+            {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+            {isRunning ? t("c9.runCode") : t("c9.runCode")}
           </Button>
         </div>
 
