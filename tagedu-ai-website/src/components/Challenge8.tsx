@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Radar, Calculator, Map, Camera, ShieldCheck, Thermometer } from "lucide-react";
+import { Radar, Calculator, Map, Camera, ShieldCheck, Thermometer, RotateCcw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
@@ -50,10 +50,44 @@ interface ChallengeProps {
 
 const Challenge8 = ({ onNavigate }: ChallengeProps) => {
   const { t } = useI18n();
-  const [currentQ, setCurrentQ] = useState(0);
+
+  // [MỚI] Hàm tạo key lưu trữ riêng theo từng User
+  const getStorageKey = () => {
+    try {
+      const userStr = localStorage.getItem("tagedu_user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return `tagedu_c2_progress_${user.id}`;
+      }
+    } catch (e) {}
+    return "tagedu_c2_progress_guest";
+  };
+
+  const [currentQ, setCurrentQ] = useState(() => {
+    const saved = localStorage.getItem(getStorageKey());
+    if (saved) {
+      const data = JSON.parse(saved);
+      return typeof data.currentQ === 'number' ? data.currentQ : 0;
+    }
+    return 0;
+  });
+
   const [shakeApp, setShakeApp] = useState<string | null>(null);
   const [correctApp, setCorrectApp] = useState<string | null>(null);
-  const [completed, setCompleted] = useState(false);
+  
+  const [completed, setCompleted] = useState(() => {
+    const saved = localStorage.getItem(getStorageKey());
+    if (saved) {
+      const data = JSON.parse(saved);
+      return data.completed === true;
+    }
+    return false;
+  });
+
+  // [MỚI] Tự động lưu vào localStorage mỗi khi có thay đổi
+  useEffect(() => {
+    localStorage.setItem(getStorageKey(), JSON.stringify({ currentQ, completed }));
+  }, [currentQ, completed]);
 
   const progress = (currentQ / QUESTIONS.length) * 100;
 
@@ -117,16 +151,32 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
     setCorrectApp(null);
     setShakeApp(null);
     setCompleted(false);
+    localStorage.removeItem(getStorageKey());
   };
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h2 className="mb-1 text-xl font-bold text-foreground sm:text-2xl">
-        {t("c8.title")}
-      </h2>
-      <p className="mb-4 text-sm text-muted-foreground">
-        {t("c8.desc")}
-      </p>
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h2 className="text-xl font-bold text-foreground sm:text-2xl">
+            {t("c8.title")}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("c8.desc")}
+          </p>
+        </div>
+        {!completed && currentQ > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleReplay}
+            className="text-muted-foreground hover:text-destructive flex items-center gap-2"
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("c7.retry")}</span>
+          </Button>
+        )}
+      </div>
 
       <Progress value={completed ? 100 : progress} className="mb-8 h-2.5" />
 

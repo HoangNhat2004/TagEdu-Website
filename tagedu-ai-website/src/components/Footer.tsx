@@ -1,7 +1,13 @@
 import { useI18n } from "@/lib/i18n";
+import { toast } from "sonner";
 
 export function Footer() {
   const { t } = useI18n();
+
+  const handleComingSoon = (e: React.MouseEvent) => {
+    e.preventDefault();
+    toast.info(t("footer.comingSoon"));
+  };
 
   return (
     <footer className="w-full border-t border-white/5 py-8" style={{ background: 'rgba(10, 14, 26, 0.9)' }}>
@@ -15,8 +21,8 @@ export function Footer() {
           </p>
         </div>
         <div className="flex gap-6 text-sm text-gray-500">
-          <a href="#" className="hover:text-cyan-400 transition-colors">{t("footer.terms")}</a>
-          <a href="#" className="hover:text-cyan-400 transition-colors">{t("footer.privacy")}</a>
+          <a href="#" onClick={handleComingSoon} className="hover:text-cyan-400 transition-colors uppercase tracking-wider font-medium text-[12px]">{t("footer.terms")}</a>
+          <a href="#" onClick={handleComingSoon} className="hover:text-cyan-400 transition-colors uppercase tracking-wider font-medium text-[12px]">{t("footer.privacy")}</a>
         </div>
       </div>
     </footer>

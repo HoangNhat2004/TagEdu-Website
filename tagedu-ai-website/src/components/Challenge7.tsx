@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Check, Monitor, Cpu, ShieldCheck, Database, Globe, FileText, Music, Mail } from "lucide-react";
+import { Check, Monitor, Cpu, ShieldCheck, Database, Globe, FileText, Music, Mail, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
@@ -36,10 +36,32 @@ interface ChallengeProps {
 
 const Challenge7 = ({ onNavigate }: ChallengeProps) => {
   const { t } = useI18n();
-  const [placed, setPlaced] = useState<Record<string, string>>({});
+
+  // [MỚI] Hàm tạo key lưu trữ riêng theo từng User
+  const getStorageKey = () => {
+    try {
+      const userStr = localStorage.getItem("tagedu_user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return `tagedu_c1_placed_${user.id}`;
+      }
+    } catch (e) {}
+    return "tagedu_c1_placed_guest";
+  };
+
+  const [placed, setPlaced] = useState<Record<string, string>>(() => {
+    const saved = localStorage.getItem(getStorageKey());
+    return saved ? JSON.parse(saved) : {};
+  });
+
   const [shakeId, setShakeId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [highlightedCat, setHighlightedCat] = useState<string | null>(null);
+
+  // [MỚI] Tự động lưu vào localStorage mỗi khi có thay đổi
+  useEffect(() => {
+    localStorage.setItem(getStorageKey(), JSON.stringify(placed));
+  }, [placed]);
 
   // Refs để dùng trong native event listeners (tránh stale closure)
   const activeTouchItemId = useRef<string | null>(null);
@@ -198,12 +220,30 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 pb-24" ref={containerRef}>
-      <h2 className="mb-1 text-xl font-bold text-foreground sm:text-2xl">
-        {t("c7.title")}
-      </h2>
-      <p className="mb-6 text-sm text-muted-foreground">
-        {t("c7.desc")}
-      </p>
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h2 className="text-xl font-bold text-foreground sm:text-2xl">
+            {t("c7.title")}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("c7.desc")}
+          </p>
+        </div>
+        {!isComplete && Object.keys(placed).length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setPlaced({});
+              localStorage.removeItem(getStorageKey());
+            }}
+            className="text-muted-foreground hover:text-destructive flex items-center gap-2"
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("c7.retry")}</span>
+          </Button>
+        )}
+      </div>
 
       {isComplete ? (
         <div className="flex flex-col items-center justify-center gap-6 rounded-xl border border-success bg-success/5 p-8 text-center">
@@ -211,7 +251,14 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
             {t("c7.success")}
           </p>
           <div className="flex gap-4">
-            <Button onClick={() => setPlaced({})} variant="outline" size="lg">
+            <Button 
+              onClick={() => {
+                setPlaced({});
+                localStorage.removeItem(getStorageKey());
+              }} 
+              variant="outline" 
+              size="lg"
+            >
               {t("c7.retry")}
             </Button>
             <Button onClick={() => onNavigate("landing")} size="lg">

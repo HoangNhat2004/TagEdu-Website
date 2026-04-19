@@ -64,6 +64,7 @@ const translations: Record<Language, Translations> = {
     "footer.rights": "All rights reserved.",
     "footer.terms": "Terms of Service",
     "footer.privacy": "Privacy Policy",
+    "footer.comingSoon": "This page is coming soon!",
 
     // Progress Page
     "progress.title": "Mission Progress",
@@ -367,6 +368,7 @@ const translations: Record<Language, Translations> = {
     "footer.rights": "Đã đăng ký bản quyền.",
     "footer.terms": "Điều khoản dịch vụ",
     "footer.privacy": "Chính sách bảo mật",
+    "footer.comingSoon": "Tính năng này sẽ sớm ra mắt!",
 
     // Progress Page
     "progress.title": "Tiến độ Nhiệm vụ",
