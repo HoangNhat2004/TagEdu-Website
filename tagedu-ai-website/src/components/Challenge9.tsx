@@ -66,6 +66,18 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
   const runTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
   
+  // Refs để tránh stale closure trong event listeners
+  const isRunningRef = useRef(isRunning);
+  const isSuccessRef = useRef(isSuccess);
+
+  useEffect(() => {
+    isRunningRef.current = isRunning;
+  }, [isRunning]);
+
+  useEffect(() => {
+    isSuccessRef.current = isSuccess;
+  }, [isSuccess]);
+
   const [velocity, setVelocity] = useState(0);
   const [fuelCapacity, setFuelCapacity] = useState(85);
   const [destination, setDestination] = useState("Mars_Station_B");
@@ -97,24 +109,20 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
               setIsCloudComplete(true);
             }
 
-            // [HÀNH ĐỘNG] Chỉ ghi đè code từ cloud nếu KHÔNG đang chạy simulation hoặc thành công
-            // Điều này chặn việc race condition khi vừa thắng xong bị cloud sync ngược lại code cũ
-            if (challengeProgress.draft_data !== null && !isSuccess && !isRunning) {
+            // [HÀNH ĐỘNG] Sử dụng Ref để kiểm tra giá trị mới nhất, tránh stale closure
+            if (challengeProgress.draft_data !== null && !isSuccessRef.current && !isRunningRef.current) {
               setIsPracticing(true);
               const cloudDraft = challengeProgress.draft_data;
-              // Nếu là Reset ('{}'), khôi phục code ban đầu để đồng bộ
               if (cloudDraft === "{}" || cloudDraft === "") {
                 if (code !== getInitialCode(t)) setCode(getInitialCode(t));
               } else {
                 if (code !== cloudDraft) setCode(cloudDraft);
               }
-            } else if (challengeProgress.draft_data === null && !isSuccess && !isRunning) {
-              // Nếu cloud trống và không trong trạng thái quan trọng thì reset local
+            } else if (challengeProgress.draft_data === null && !isSuccessRef.current && !isRunningRef.current) {
               setCode(getInitialCode(t));
               setIsPracticing(false);
             }
-          } else if (!isSuccess && !isRunning) {
-            // Trường hợp không tìm thấy progress (user mới)
+          } else if (!isSuccessRef.current && !isRunningRef.current) {
             setCode(getInitialCode(t));
             setIsPracticing(false);
           }
