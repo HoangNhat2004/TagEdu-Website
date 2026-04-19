@@ -35,6 +35,8 @@ const translations: Record<Language, Translations> = {
     "mission.start": "Start Mission",
     "mission.requiresLevel": "Requires Level 5 Navigation Clearance.",
     "mission.comingSoon": "🚧 Mission is still under construction. Stay tuned!",
+    "challenge.loginRequired": "Please login to access missions.",
+    "challenge.lockedMessage": "Mission Locked! You need to complete the previous mission first.",
 
     // Mission 1 - Galactic Variables
     "mission1.title": "Galactic Variables",
@@ -336,6 +338,8 @@ const translations: Record<Language, Translations> = {
     "mission.start": "Bắt đầu Nhiệm vụ",
     "mission.requiresLevel": "Yêu cầu Cấp độ 5 Chứng nhận Điều hướng.",
     "mission.comingSoon": "🚧 Nhiệm vụ vẫn đang được phát triển. Vui lòng quay lại sau!",
+    "challenge.loginRequired": "Vui lòng đăng nhập để tham gia các thử thách.",
+    "challenge.lockedMessage": "Nhiệm vụ chưa mở! Bạn hãy hoàn thành thử thách trước đó nhé.",
 
     // Mission 1
     "mission1.title": "Biến Thiên Hà",

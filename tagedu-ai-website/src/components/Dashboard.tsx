@@ -3,19 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface DashboardProps {
-  onNavigate: (view: "challenge7" | "challenge8") => void;
+  onNavigate: (view: "challenge1" | "challenge2") => void;
 }
 
 const modules = [
   {
-    id: "challenge7" as const,
-    title: "Thử thách 7: Phân loại phần mềm",
+    id: "challenge1" as const,
+    title: "Thử thách 1: Phân loại phần mềm",
     description: "Kéo thả phần mềm vào đúng loại của nó.",
     icon: GripVertical,
   },
   {
-    id: "challenge8" as const,
-    title: "Thử thách 8: Chức năng phần mềm",
+    id: "challenge2" as const,
+    title: "Thử thách 2: Chức năng phần mềm",
     description: "Chọn phần mềm phù hợp với chức năng được yêu cầu.",
     icon: MousePointerClick,
   },

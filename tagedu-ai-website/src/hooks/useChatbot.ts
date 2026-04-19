@@ -31,7 +31,12 @@ export function useChatbot(currentView: View, isOpen: boolean) {
 
   useEffect(() => {
     const isGeneralView = ["landing", "progress", "settings"].includes(currentView);
-    const newFetchId = isGeneralView ? "landing" : currentView;
+    const viewMapping: Record<string, string> = {
+      "challenge1": "challenge7",
+      "challenge2": "challenge8",
+      "challenge3": "challenge9"
+    };
+    const newFetchId = isGeneralView ? "landing" : (viewMapping[currentView] || currentView);
 
     if (newFetchId !== lastFetchIdRef.current) {
       setMessages([]); // Xoá trắng bóng chat phòng cũ để tránh hiện tượng lưu ảnh (flash) sang phòng mới
@@ -78,22 +83,22 @@ export function useChatbot(currentView: View, isOpen: boolean) {
 
   const getWelcomeMessage = (view: View) => {
     const userName = getActiveUser()?.fullName || "bạn";
-    if (view === "challenge7") {
+    if (view === "challenge1") {
       return t("chat.welcomeChallenge7").replace("{name}", userName);
-    } else if (view === "challenge8") {
+    } else if (view === "challenge2") {
       return t("chat.welcomeChallenge8").replace("{name}", userName);
-    } else if (view === "challenge9") {
+    } else if (view === "challenge3") {
       return t("chat.welcomeChallenge9").replace("{name}", userName);
     }
     return t("chat.welcomeDefault").replace("{name}", userName);
   };
 
   const getQuickReplies = (view: View) => {
-    if (view === "challenge7") {
+    if (view === "challenge1") {
       return [t("chat.qr.c7_1"), t("chat.qr.c7_2"), t("chat.qr.c7_3")];
-    } else if (view === "challenge8") {
+    } else if (view === "challenge2") {
       return [t("chat.qr.c8_1"), t("chat.qr.c8_2"), t("chat.qr.c8_3")];
-    } else if (view === "challenge9") {
+    } else if (view === "challenge3") {
       return [t("chat.qr.c9_1"), t("chat.qr.c9_2"), t("chat.qr.c9_3")];
     }
     return [t("chat.qr.default1"), t("chat.qr.default2"), t("chat.qr.default3")];
@@ -117,7 +122,12 @@ export function useChatbot(currentView: View, isOpen: boolean) {
       try {
       // Nhóm các màn hình ngoài sảnh (Home, Progress, Settings) về chung một phòng tên là 'landing' để kế thừa lịch sử cũ
       const isGeneralView = ["landing", "progress", "settings"].includes(currentView);
-      const fetchId = isGeneralView ? "landing" : currentView;
+      const viewMapping: Record<string, string> = {
+        "challenge1": "challenge7",
+        "challenge2": "challenge8",
+        "challenge3": "challenge9"
+      };
+      const fetchId = isGeneralView ? "landing" : (viewMapping[currentView] || currentView);
 
       setIsFetchingHistory(true);
 
@@ -166,7 +176,12 @@ export function useChatbot(currentView: View, isOpen: boolean) {
   const handleClearChat = async () => {
     try {
       const isGeneralView = ["landing", "progress", "settings"].includes(currentView);
-      const deleteId = isGeneralView ? "landing" : currentView;
+      const viewMapping: Record<string, string> = {
+        "challenge1": "challenge7",
+        "challenge2": "challenge8",
+        "challenge3": "challenge9"
+      };
+      const deleteId = isGeneralView ? "landing" : (viewMapping[currentView] || currentView);
 
       const response = await fetch(`${API_URL}/chat-session`, {
         method: "DELETE",
@@ -223,7 +238,12 @@ export function useChatbot(currentView: View, isOpen: boolean) {
 
     try {
       const isGeneralView = ["landing", "progress", "settings"].includes(currentView);
-      const saveId = isGeneralView ? "landing" : currentView;
+      const viewMapping: Record<string, string> = {
+        "challenge1": "challenge7",
+        "challenge2": "challenge8",
+        "challenge3": "challenge9"
+      };
+      const saveId = isGeneralView ? "landing" : (viewMapping[currentView] || currentView);
 
       const response = await fetch(`${API_URL}/chat`, {
         method: "POST",

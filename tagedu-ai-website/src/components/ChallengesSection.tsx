@@ -20,19 +20,19 @@ interface MissionConfig {
 const missions: MissionConfig[] = [
   {
     id: "challenge7",
-    routeId: "challenge7",
+    routeId: "challenge1",
     titleKey: "mission1.title",
     descKey: "mission1.desc",
   },
   {
     id: "challenge8",
-    routeId: "challenge8",
+    routeId: "challenge2",
     titleKey: "mission2.title",
     descKey: "mission2.desc",
   },
   {
     id: "challenge9",
-    routeId: "challenge9",
+    routeId: "challenge3",
     titleKey: "mission3.title",
     descKey: "mission3.desc",
   },
