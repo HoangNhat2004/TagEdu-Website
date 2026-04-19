@@ -106,7 +106,15 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
               } else {
                 setCode(cloudDraft);
               }
+            } else {
+              // Nếu cloud trống thì reset local
+              setCode(getInitialCode(t));
+              setIsPracticing(false);
             }
+          } else {
+            // Trường hợp không tìm thấy progress (user mới)
+            setCode(getInitialCode(t));
+            setIsPracticing(false);
           }
         }
       } catch (error) {
@@ -117,6 +125,8 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
     };
 
     fetchCloudDraft();
+    window.addEventListener("auth_change", fetchCloudDraft);
+    return () => window.removeEventListener("auth_change", fetchCloudDraft);
   }, []);
 
   // Sync code to Cloud khi có thay đổi

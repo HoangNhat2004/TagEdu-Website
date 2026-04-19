@@ -80,7 +80,7 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
 
       try {
         const res = await fetch(`${API_URL}/progress`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
           const data = await res.json();
@@ -92,10 +92,13 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
             }
 
             if (challengeProgress.draft_data !== null) {
-              setIsPracticing(true); // Nếu có bản ghi nháp, ưu tiên giao diện làm bài
+              setIsPracticing(true); 
               const cloudDraft = JSON.parse(challengeProgress.draft_data);
-              // [SỬA] Luôn cập nhật từ cloud ngay cả khi rỗng để đồng bộ hóa Reset
               setPlaced(cloudDraft);
+            } else {
+              // Nếu cloud trống thì reset local luôn để tránh dữ liệu cũ từ khách
+              setPlaced({});
+              setIsPracticing(false);
             }
           }
         }
@@ -107,6 +110,8 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
     };
 
     fetchCloudDraft();
+    window.addEventListener("auth_change", fetchCloudDraft);
+    return () => window.removeEventListener("auth_change", fetchCloudDraft);
   }, []);
 
   // Tự động đồng bộ hóa lên Cloud

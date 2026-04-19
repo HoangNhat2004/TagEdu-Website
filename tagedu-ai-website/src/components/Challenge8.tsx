@@ -116,6 +116,11 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
               // [SỬA] Luôn cập nhật tiến độ (ngay cả câu 0) để đồng bộ Reset
               setCurrentQ(cloudDraft.currentQ);
               setCompleted(cloudDraft.completed);
+            } else {
+              // Nếu cloud trống thì reset local để tránh dữ liệu rác từ khách
+              setCurrentQ(0);
+              setCompleted(false);
+              setIsPracticing(false);
             }
           }
         }
@@ -127,6 +132,8 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
     };
 
     fetchCloudDraft();
+    window.addEventListener("auth_change", fetchCloudDraft);
+    return () => window.removeEventListener("auth_change", fetchCloudDraft);
   }, []);
 
   // Tự động đồng bộ hóa lên Cloud
