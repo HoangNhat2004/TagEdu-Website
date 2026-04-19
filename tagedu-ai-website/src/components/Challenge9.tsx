@@ -318,20 +318,17 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
     }
   };
 
-  const handleRetry = async () => {
-    if (isResetting) return;
-    setIsResetting(true);
+  const handleResetCode = async () => {
+    setCode(getInitialCode(t));
+    setIsSuccess(false);
+    setIsPracticing(true);
+    handleResetSimulation();
+    localStorage.removeItem(getStorageKey());
 
-    try {
-      setCode(getInitialCode(t));
-      setIsSuccess(false);
-      setIsPracticing(true);
-      setVelocity(0);
-      localStorage.removeItem(getStorageKey());
-
-      const token = localStorage.getItem("tagedu_token");
-      if (token) {
-        const res = await fetch(`${API_URL}/progress/reset`, {
+    const token = localStorage.getItem("tagedu_token");
+    if (token) {
+      try {
+        await fetch(`${API_URL}/progress/reset`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -339,17 +336,13 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
           },
           body: JSON.stringify({ challengeId: "challenge9" }),
         });
-        
-        if (res.ok) {
-          toast.success(t("challenge.resetSuccess"), { id: "challenge-reset" });
-        }
+        // [SILENT] No toast for code-only reset
+      } catch (error) {
+        console.error("Error silently resetting progress:", error);
       }
-    } catch (error) {
-      console.error("Error resetting progress:", error);
-    } finally {
-      setIsResetting(false);
     }
   };
+
 
   const renderTerminalLine = (line: string) => {
     if (line.includes("___")) {
@@ -420,6 +413,15 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
             <FileCode className="h-4 w-4 text-primary" />
             <span className="text-sm font-semibold text-foreground">main.py</span>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleResetCode}
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            title={t("challenge.retry")}
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
         </div>
         <div className="flex-1 overflow-auto bg-[#282c34]">
           <CodeMirror value={code} height="400px" theme={oneDark} extensions={[python()]} onChange={(val) => setCode(val)} className="text-sm" />
