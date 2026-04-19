@@ -461,14 +461,14 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
       </div>
 
       <div className="flex w-full flex-col gap-6 md:w-1/4">
-        <div className="flex items-center justify-end gap-4">
-          <div className={`flex items-center gap-2 rounded-full border px-3 py-1 transition-all duration-300 ${isSyncing ? 'border-yellow-500/30 bg-yellow-500/10 text-yellow-500' : 'border-success/30 bg-success/10 text-success'}`}>
-            <div className={`h-2 w-2 rounded-full ${isSyncing ? 'bg-yellow-400 animate-pulse' : 'bg-success'}`}></div>
-            <span className="text-xs font-bold">{isSyncing ? t("challenge.syncing") : t("challenge.synced")}</span>
-          </div>
-          <Button onClick={handleRunCode} disabled={isRunning} className={`gap-2 ${isRunning ? 'opacity-50' : 'bg-primary'} text-primary-foreground`}>
-            {isRunning ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-            {isRunning ? t("challenge.syncing") : t("c9.runCode")}
+        <div className="flex items-center justify-end">
+          <Button 
+            onClick={handleRunCode} 
+            disabled={isRunning || isSyncing} 
+            className={`w-full gap-2 transition-all ${isRunning || isSyncing ? 'opacity-70 bg-muted cursor-not-allowed text-muted-foreground' : 'bg-primary text-primary-foreground shadow-lg hover:shadow-primary/20'}`}
+          >
+            {isRunning || isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+            {isSyncing ? t("challenge.syncing") : isRunning ? t("c9.runCode") : t("c9.runCode")}
           </Button>
         </div>
 
