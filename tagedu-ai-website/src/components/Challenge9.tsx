@@ -34,14 +34,29 @@ ${t("c9.code.task3")}
 
 export default function Challenge9({ onNavigate }: ChallengeProps) {
   const { t } = useI18n();
+  
+  // Lấy ID người dùng để tạo key lưu trữ riêng biệt cho từng tài khoản
+  const getStorageKey = () => {
+    try {
+      const userStr = localStorage.getItem("tagedu_user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return `tagedu_c9_draft_code_${user.id}`;
+      }
+    } catch (e) {
+      console.error("Error parsing user for storage key:", e);
+    }
+    return "tagedu_c9_draft_code_guest";
+  };
+
   const [code, setCode] = useState(() => {
-    const savedCode = localStorage.getItem("tagedu_c9_draft_code");
+    const savedCode = localStorage.getItem(getStorageKey());
     return savedCode || getInitialCode(t);
   });
   
-  // Auto-save code to localStorage whenever it changes
+  // Auto-save code to localStorage whenever it changes, scoped to the current user
   useEffect(() => {
-    localStorage.setItem("tagedu_c9_draft_code", code);
+    localStorage.setItem(getStorageKey(), code);
   }, [code]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [outputLines, setOutputLines] = useState<string[]>([]);
