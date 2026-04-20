@@ -61,6 +61,7 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
   const [isCloudComplete, setIsCloudComplete] = useState(false);
   const [isPracticing, setIsPracticing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const hasInitializedCode = useRef(false);
 
   const velocityIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const runTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -109,23 +110,20 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
               setIsCloudComplete(true);
             }
 
-            // [HÀNH ĐỘNG] Sử dụng Ref để kiểm tra giá trị mới nhất, tránh stale closure
-            if (challengeProgress.draft_data !== null && !isSuccessRef.current && !isRunningRef.current) {
-              setIsPracticing(true);
-              const cloudDraft = challengeProgress.draft_data;
-              if (cloudDraft === "{}" || cloudDraft === "") {
+            // [HÀNH ĐỘNG] Chỉ ghi đè code khi lần đầu tải trang hoặc khi người dùng chưa bắt đầu thực hành
+            if (!hasInitializedCode.current || !isPracticing) {
+              if (challengeProgress.draft_data !== null && !isSuccessRef.current && !isRunningRef.current) {
+                setIsPracticing(true);
+                const cloudDraft = challengeProgress.draft_data;
+                const finalDraft = (cloudDraft === "{}" || cloudDraft === "") ? getInitialCode(t) : cloudDraft;
+                if (code !== finalDraft) setCode(finalDraft);
+                hasInitializedCode.current = true;
+              } else if (challengeProgress.draft_data === null && !isSuccessRef.current && !isRunningRef.current) {
                 if (code !== getInitialCode(t)) setCode(getInitialCode(t));
-              } else {
-                if (code !== cloudDraft) setCode(cloudDraft);
+                setIsPracticing(false);
+                hasInitializedCode.current = true;
               }
-            } else if (challengeProgress.draft_data === null && !isSuccessRef.current && !isRunningRef.current) {
-              setCode(getInitialCode(t));
-              setIsPracticing(false);
             }
-          } else if (!isSuccessRef.current && !isRunningRef.current) {
-            setCode(getInitialCode(t));
-            setIsPracticing(false);
-          }
         }
       } catch (error) {
         console.error("Error fetching cloud draft:", error);

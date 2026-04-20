@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Radar, Calculator, Map, Camera, ShieldCheck, Thermometer, RotateCcw, Loader2, Check } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -78,6 +78,7 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
   const [isCloudComplete, setIsCloudComplete] = useState(false);
   const [isPracticing, setIsPracticing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const hasInitialized = useRef(false);
   
   const [completed, setCompleted] = useState(() => {
     const saved = localStorage.getItem(getStorageKey());
@@ -110,17 +111,19 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
               setIsCloudComplete(true);
             }
 
-            if (challengeProgress.draft_data !== null) {
-              setIsPracticing(true); 
-              const cloudDraft = JSON.parse(challengeProgress.draft_data);
-              // [SỬA] Luôn cập nhật tiến độ (ngay cả câu 0) để đồng bộ Reset
-              setCurrentQ(cloudDraft.currentQ);
-              setCompleted(cloudDraft.completed);
-            } else {
-              // Nếu cloud trống thì reset local để tránh dữ liệu rác từ khách
-              setCurrentQ(0);
-              setCompleted(false);
-              setIsPracticing(false);
+            // [HÀNH ĐỘNG] Chỉ ghi đè dữ liệu cục bộ khi lần đầu tải trang hoặc chưa bắt đầu thực hành
+            if (!hasInitialized.current || !isPracticing) {
+              if (challengeProgress.draft_data !== null) {
+                setIsPracticing(true); 
+                const cloudDraft = JSON.parse(challengeProgress.draft_data);
+                setCurrentQ(cloudDraft.currentQ);
+                setCompleted(cloudDraft.completed);
+              } else {
+                setCurrentQ(0);
+                setCompleted(false);
+                setIsPracticing(false);
+              }
+              hasInitialized.current = true;
             }
           }
         }

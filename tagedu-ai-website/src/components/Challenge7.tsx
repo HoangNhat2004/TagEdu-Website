@@ -61,6 +61,7 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
   const [isCloudComplete, setIsCloudComplete] = useState(false);
   const [isPracticing, setIsPracticing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const hasInitialized = useRef(false);
 
   // Refs để dùng trong native touch listeners
   const activeTouchItemId = useRef<string | null>(null);
@@ -91,14 +92,17 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
               setIsCloudComplete(true);
             }
 
-            if (challengeProgress.draft_data !== null) {
-              setIsPracticing(true); 
-              const cloudDraft = JSON.parse(challengeProgress.draft_data);
-              setPlaced(cloudDraft);
-            } else {
-              // Nếu cloud trống thì reset local luôn để tránh dữ liệu cũ từ khách
-              setPlaced({});
-              setIsPracticing(false);
+            // [HÀNH ĐỘNG] Chỉ ghi đè dữ liệu cục bộ khi lần đầu tải trang hoặc chưa bắt đầu thực hành
+            if (!hasInitialized.current || !isPracticing) {
+              if (challengeProgress.draft_data !== null) {
+                setIsPracticing(true); 
+                const cloudDraft = JSON.parse(challengeProgress.draft_data);
+                setPlaced(cloudDraft);
+              } else {
+                setPlaced({});
+                setIsPracticing(false);
+              }
+              hasInitialized.current = true;
             }
           }
         }
