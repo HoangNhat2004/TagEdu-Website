@@ -124,6 +124,7 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
                 hasInitializedCode.current = true;
               }
             }
+          }
         }
       } catch (error) {
         console.error("Error fetching cloud draft:", error);
