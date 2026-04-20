@@ -8,6 +8,10 @@ export function ProgressPage() {
   const { t } = useI18n();
   const [completedChallenges, setCompletedChallenges] = useState<Record<string, boolean>>({});
 
+  const userStr = localStorage.getItem("tagedu_user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const isAdmin = user?.role === 'admin';
+
   useEffect(() => {
     const fetchProgress = async () => {
       const token = localStorage.getItem("tagedu_token");
@@ -41,8 +45,9 @@ export function ProgressPage() {
 
   const totalMissions = 3;
   const completedCount = Object.keys(completedChallenges).length;
-  const activeCount = Math.min(1, totalMissions - completedCount);
-  const lockedCount = totalMissions - completedCount - activeCount;
+  // [ROLE: ADMIN] Với admin, tất cả thử thách chưa làm đều là Active, không có Locked
+  const activeCount = isAdmin ? (totalMissions - completedCount) : Math.min(1, totalMissions - completedCount);
+  const lockedCount = isAdmin ? 0 : (totalMissions - completedCount - activeCount);
   const progressPercent = Math.round((completedCount / totalMissions) * 100);
 
   const stats = [
@@ -132,7 +137,7 @@ export function ProgressPage() {
               let status: "completed" | "active" | "locked" = "locked";
               if (completedChallenges[mission.id]) {
                 status = "completed";
-              } else if (index === 0) {
+              } else if (isAdmin || index === 0) {
                 status = "active";
               } else {
                 const prevMissionId = array[index - 1].id;

@@ -42,6 +42,10 @@ export function ChallengesSection({ onNavigate }: ChallengesProps) {
   const [completedChallenges, setCompletedChallenges] = useState<Record<string, boolean>>({});
   const { t } = useI18n();
 
+  const userStr = localStorage.getItem("tagedu_user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const isAdmin = user?.role === 'admin';
+
   useEffect(() => {
     const fetchProgress = async () => {
       const token = localStorage.getItem("tagedu_token");
@@ -81,9 +85,13 @@ export function ChallengesSection({ onNavigate }: ChallengesProps) {
 
   const getMissionStatus = (missionId: string, index: number): "completed" | "active" | "locked" => {
     if (completedChallenges[missionId]) return "completed";
+    
+    // [ROLE: ADMIN] Luôn mở khóa tất cả thử thách cho Admin
+    if (isAdmin) return "active";
+
     if (index === 0) return "active";
     
-    // If the previous mission is completed, this one becomes active. Otherwise it's locked.
+    // Nếu thử thách trước đó đã hoàn thành, thử thách này sẽ mở khóa. Nếu không thì sẽ bị khóa.
     const prevMissionId = missions[index - 1].id;
     if (completedChallenges[prevMissionId]) return "active";
 
