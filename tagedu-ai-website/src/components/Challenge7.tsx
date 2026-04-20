@@ -194,7 +194,7 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
         });
         
         if (res.ok) {
-          toast.success(t("challenge.resetSuccess"));
+          toast.success(t("challenge.resetSuccess"), { id: "challenge-reset" });
         }
       }
     } catch (error) {
