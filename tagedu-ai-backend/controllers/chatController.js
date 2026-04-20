@@ -9,6 +9,7 @@ const getApiKeys = () => {
 
 // Lưu vết con trỏ Key hiện tại để xoay vòng
 let currentKeyIndex = 0;
+const MODEL_PRIORITY = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest", "gemini-1.5-flash"];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -17,41 +18,52 @@ const shouldRetryGeminiError = (error) => {
   return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
 };
 
-const getGeminiModel = (chatHistory, systemInstruction) => {
+const getGeminiModel = (chatHistory, systemInstruction, modelName) => {
   const keys = getApiKeys();
   const selectedKey = keys[currentKeyIndex];
   const genAI = new GoogleGenerativeAI(selectedKey);
-  // Sử dụng model gemini-1.5-flash ổn định và nhanh chóng
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", systemInstruction });
+  const model = genAI.getGenerativeModel({ model: modelName, systemInstruction });
   const chat = model.startChat({ history: chatHistory });
   return { chat, model };
 };
 
 const streamGeminiWithRotationAndRetry = async (chatHistory, systemInstruction, message, maxRetries = 3) => {
   let attempt = 0;
+  let modelIndex = 0;
   let lastError = null;
 
   while (attempt <= maxRetries) {
+    const currentModelName = MODEL_PRIORITY[modelIndex];
     try {
-      const { chat } = getGeminiModel(chatHistory, systemInstruction);
-      return await chat.sendMessageStream(message);
+      const { chat } = getGeminiModel(chatHistory, systemInstruction, currentModelName);
+      const result = await chat.sendMessageStream(message);
+      return { result, modelUsed: currentModelName };
     } catch (error) {
       lastError = error;
       const status = Number(error?.status);
       const keys = getApiKeys();
       
-      console.log(`[Cảnh báo API] Key ${currentKeyIndex + 1} báo lỗi: ${status}`);
+      console.log(`[Cảnh báo AI] Model: ${currentModelName} | Key: ${currentKeyIndex + 1} | Lỗi: ${status}`);
 
-      if ((status === 429 || status === 404) && keys.length > 1) {
+      // Nếu lỗi do Model không tồn tại (404) hoặc quá tải (503/500), hãy chuyển sang model dự phòng
+      if ((status === 404 || status === 503 || status === 500) && modelIndex < MODEL_PRIORITY.length - 1) {
+        modelIndex++;
+        console.log(`[Model Fallback] 🔄 Chuyển sang model: ${MODEL_PRIORITY[modelIndex]}`);
+        continue; 
+      }
+
+      // Nếu lỗi do giới hạn Key (429), hãy chuyển sang Key khác
+      if ((status === 429) && keys.length > 1) {
           currentKeyIndex = (currentKeyIndex + 1) % keys.length;
-          console.log(`[API Rotation] 🔄 Chuyển sang Key số ${currentKeyIndex + 1} và thực thi lại lập tức!`);
+          modelIndex = 0; // Thử lại từ model tốt nhất với Key mới
+          console.log(`[Key Rotation] 🔄 Chuyển sang Key số ${currentKeyIndex + 1}`);
           attempt += 1;
           continue; 
       }
       
       if (!shouldRetryGeminiError(error) || attempt === maxRetries) throw error;
 
-      const delayMs = 600 * Math.pow(2, attempt);
+      const delayMs = 1000 * Math.pow(2, attempt);
       await sleep(delayMs);
       attempt += 1;
     }
@@ -184,8 +196,11 @@ exports.handleChat = async (req, res) => {
     );
 
     let resultStream;
+    let successfulModel = MODEL_PRIORITY[0];
     try {
-      resultStream = await streamGeminiWithRotationAndRetry(chatHistory, systemInstruction, message, 3);
+      const completion = await streamGeminiWithRotationAndRetry(chatHistory, systemInstruction, message, 3);
+      resultStream = completion.result;
+      successfulModel = completion.modelUsed;
     } catch (error) {
       console.error("❌ Lỗi khi khởi tạo stream:", error);
       throw error;
@@ -203,10 +218,10 @@ exports.handleChat = async (req, res) => {
         }
       }
     } catch (iterError) {
-      // [FALLBACK] Nếu đang stream mà bị lỗi "Failed to parse stream", tự động chuyển sang chat thường
+      // [FALLBACK] Nếu đang stream mà bị lỗi "Failed to parse stream", tự động chuyển sang chat thường với model đã thành công
       if (iterError.message.includes("Failed to parse stream") || iterError.message.includes("stream")) {
-        console.log("🔄 Phát hiện lỗi Stream, đang thử Fallback sang chế độ chat thường...");
-        const { chat } = getGeminiModel(chatHistory, systemInstruction);
+        console.log(`🔄 Hồi phục Stream lỗi, đang dùng: ${successfulModel}`);
+        const { chat } = getGeminiModel(chatHistory, systemInstruction, successfulModel);
         const result = await chat.sendMessage(message);
         const fallbackText = result.response.text();
         fullAiResponse = fallbackText;
