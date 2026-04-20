@@ -111,8 +111,9 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
               setIsCloudComplete(true);
             }
 
-            // [HÀNH ĐỘNG] Chỉ ghi đè dữ liệu cục bộ khi lần đầu tải trang hoặc chưa bắt đầu thực hành
-            if (!hasInitialized.current || !isPracticing) {
+            // [HÀNH ĐỘNG] CHỈ ghi đè dữ liệu cục bộ khi lần đầu tải trang.
+            // Sau khi đã khởi tạo (hasInitialized), không bao giờ tự ý ghi đè dữ liệu nữa.
+            if (!hasInitialized.current) {
               if (challengeProgress.draft_data !== null) {
                 setIsPracticing(true); 
                 const cloudDraft = JSON.parse(challengeProgress.draft_data);
@@ -187,8 +188,9 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
             body: JSON.stringify({ challengeId: "challenge8" }),
           });
           if (res.ok) {
-            setIsPracticing(false);
+            // [SỬA] Không set isPracticing là false để tránh bị Reset dữ liệu bởi logic đồng bộ
             setIsCloudComplete(true);
+            window.dispatchEvent(new Event("auth_change"));
           }
         } catch (error) {
           console.error("Error saving complete status:", error);

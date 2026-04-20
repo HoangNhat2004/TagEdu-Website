@@ -110,19 +110,19 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
               setIsCloudComplete(true);
             }
 
-            // [HÀNH ĐỘNG] Chỉ ghi đè code khi lần đầu tải trang hoặc khi người dùng chưa bắt đầu thực hành
-            if (!hasInitializedCode.current || !isPracticing) {
+            // [HÀNH ĐỘNG] CHỈ ghi đè code khi lần đầu tải trang. 
+            // Sau khi đã khởi tạo (hasInitializedCode), không bao giờ tự ý ghi đè code nữa để bảo vệ local state.
+            if (!hasInitializedCode.current) {
               if (challengeProgress.draft_data !== null && !isSuccessRef.current && !isRunningRef.current) {
                 setIsPracticing(true);
                 const cloudDraft = challengeProgress.draft_data;
                 const finalDraft = (cloudDraft === "{}" || cloudDraft === "") ? getInitialCode(t) : cloudDraft;
                 if (code !== finalDraft) setCode(finalDraft);
-                hasInitializedCode.current = true;
               } else if (challengeProgress.draft_data === null && !isSuccessRef.current && !isRunningRef.current) {
                 if (code !== getInitialCode(t)) setCode(getInitialCode(t));
                 setIsPracticing(false);
-                hasInitializedCode.current = true;
               }
+              hasInitializedCode.current = true;
             }
           }
         }
@@ -266,7 +266,7 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
             body: JSON.stringify({ challengeId: "challenge9" }),
           });
           if (res.ok) {
-            setIsPracticing(false);
+            // [SỬA] Không set isPracticing là false để tránh bị Reset code bởi logic đồng bộ
             setIsCloudComplete(true);
             window.dispatchEvent(new Event("auth_change"));
           }
