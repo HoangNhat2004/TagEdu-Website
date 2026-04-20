@@ -21,8 +21,8 @@ const getGeminiModel = (chatHistory, systemInstruction) => {
   const keys = getApiKeys();
   const selectedKey = keys[currentKeyIndex];
   const genAI = new GoogleGenerativeAI(selectedKey);
-  // Sử dụng model gemini-2.5-flash như bạn yêu cầu
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", systemInstruction });
+  // Sử dụng model gemini-1.5-flash ổn định và nhanh chóng
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", systemInstruction });
   const chat = model.startChat({ history: chatHistory });
   return { chat, model };
 };
