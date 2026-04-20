@@ -74,9 +74,9 @@ router.post('/progress/complete', authenticateToken, (req, res) => {
   }
 
   const query = `
-    INSERT INTO user_progress (user_id, challenge_id, is_completed, completed_at, draft_data)
-    VALUES (?, ?, 1, NOW(), NULL)
-    ON DUPLICATE KEY UPDATE is_completed = 1, completed_at = NOW(), draft_data = NULL
+    INSERT INTO user_progress (user_id, challenge_id, is_completed, completed_at)
+    VALUES (?, ?, 1, NOW())
+    ON DUPLICATE KEY UPDATE is_completed = 1, completed_at = NOW()
   `;
 
   db.execute(query, [userId, challengeId], (err, results) => {
