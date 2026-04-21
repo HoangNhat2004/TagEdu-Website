@@ -434,13 +434,13 @@ export function AdminDashboard() {
                               ? 'bg-[#131b2f] text-gray-200 rounded-2xl rounded-tl-sm border border-white/5 shadow-[0_4px_10px_rgba(0,0,0,0.3)]'
                               : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-2xl rounded-tr-sm shadow-[0_4px_15px_rgba(0,212,255,0.15)]'
                           }`}>
-                            <div className={`prose prose-sm max-w-none text-left prose-p:leading-relaxed prose-p:m-0 prose-ul:m-0 prose-ul:pl-5 ${isAI ? 'prose-invert prose-strong:text-white' : 'prose-strong:text-white'}`}>
+                            <div className={`prose prose-sm prose-p:leading-relaxed prose-pre:p-0 max-w-full w-full min-w-0 [overflow-wrap:anywhere] break-words whitespace-normal text-left pr-3 overflow-x-hidden ${isAI ? 'prose-invert prose-strong:text-white' : 'prose-strong:text-white shadow-none'}`}>
                               <ReactMarkdown
                                 components={{
-                                  p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
-                                  strong: ({node, ...props}) => <strong className="font-bold tracking-wide" {...props} />,
-                                  ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
-                                  ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2 space-y-1 text-cyan-200" {...props} />,
+                                  p: ({node, ...props}) => <p className="mb-3 last:mb-0" {...props} />,
+                                  strong: ({node, ...props}) => <strong className="font-bold text-white tracking-wide" {...props} />,
+                                  ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-3 space-y-1" {...props} />,
+                                  ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-3 space-y-1 text-cyan-200" {...props} />,
                                   li: ({node, ...props}) => <li className="pl-1" {...props} />,
                                   code: ({ node, className, children, ...props }) => {
                                     const match = /language-(\w+)/.exec(className || "");
