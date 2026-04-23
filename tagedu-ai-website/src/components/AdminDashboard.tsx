@@ -188,8 +188,17 @@ export function AdminDashboard() {
                 placeholder={t("admin.searchPlaceholder")}
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-[#131b2f] py-2 pl-9 pr-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all shadow-inner"
+                className="w-full rounded-lg border border-white/10 bg-[#131b2f] py-2 pl-9 pr-10 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all shadow-inner"
               />
+              {userSearch && (
+                <button
+                  onClick={() => setUserSearch("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-cyan-400 hover:bg-white/5 rounded-md transition-all duration-200 hover:scale-110"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -403,8 +412,17 @@ export function AdminDashboard() {
                     placeholder={t("admin.searchMessages")}
                     value={chatSearch}
                     onChange={(e) => setChatSearch(e.target.value)}
-                    className="w-full rounded-lg border border-white/10 bg-[#131b2f] py-2 pl-9 pr-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 shadow-inner transition"
+                    className="w-full rounded-lg border border-white/10 bg-[#131b2f] py-2 pl-9 pr-10 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 shadow-inner transition"
                   />
+                  {chatSearch && (
+                    <button
+                      onClick={() => setChatSearch("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-cyan-400 hover:bg-white/5 rounded-md transition-all duration-200 hover:scale-110"
+                      aria-label="Clear search"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </div>
 
