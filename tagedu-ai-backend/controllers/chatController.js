@@ -14,7 +14,13 @@ let currentKeyIndex = 0;
 // - gemini-2.5-flash-lite: phiên bản nhẹ hơn, ít bị quá tải hơn
 // - gemini-2.0-flash-lite: dự phòng cuối cùng
 // ĐÃ LOẠI BỎ: gemini-2.0-flash (quota free = 0), gemini-1.5-flash (404 not found)
-const MODEL_PRIORITY = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash-lite"];
+const MODEL_PRIORITY = [
+  "gemini-2.5-flash", 
+  "gemini-1.5-flash", 
+  "gemini-2.5-flash-lite", 
+  "gemini-1.5-flash-8b", 
+  "gemini-2.0-flash-lite"
+];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
