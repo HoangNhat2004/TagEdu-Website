@@ -419,7 +419,12 @@ export function AdminDashboard() {
         });
 
         const filteredLogs = chatLogs
-          .filter(log => log.challenge_id === activeTab)
+          .filter(log => {
+            if (activeTab === "challenge3") {
+              return log.challenge_id === "challenge3" || log.challenge_id === "challenge9";
+            }
+            return log.challenge_id === activeTab;
+          })
           .filter(log => chatSearch === "" || log.content?.toLowerCase().includes(chatSearch.toLowerCase()));
 
         return (
@@ -449,7 +454,12 @@ export function AdminDashboard() {
               <div className="flex items-center border-b border-white/10 bg-[#0a0e1a]/80 px-4 shrink-0 gap-2 overflow-x-auto">
                 <div className="flex flex-1 min-w-max">
                   {TABS.map(tab => {
-                    const count = chatLogs.filter(l => l.challenge_id === tab.key && l.role === 'user').length;
+                    const count = chatLogs.filter(l => {
+                      if (tab.key === "challenge3") {
+                        return (l.challenge_id === "challenge3" || l.challenge_id === "challenge9") && l.role === 'user';
+                      }
+                      return l.challenge_id === tab.key && l.role === 'user';
+                    }).length;
                     return (
                       <button
                         key={tab.key}
