@@ -309,8 +309,8 @@ exports.handleChat = async (req, res) => {
             const status = Number(error?.status);
             console.log(`[Cảnh báo AI] Model: ${currentModelName} | Key: ${currentKeyIndex + 1}/${keys.length} | Lỗi: ${status} | Round: ${round + 1}`);
 
-            if (status === 404) {
-              console.log(`[Model Skip] ⏭️ Model ${currentModelName} không tồn tại, thử model tiếp theo...`);
+            if (status === 404 || status === 400) {
+              console.log(`[Model Skip] ⏭️ Model ${currentModelName} không khả dụng (Lỗi ${status}), thử model tiếp theo...`);
               round = MAX_ROUNDS; // Thoát luôn cả vòng round
               break;
             }
