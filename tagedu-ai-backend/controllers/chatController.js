@@ -16,9 +16,12 @@ let currentKeyIndex = 0;
 // ĐÃ LOẠI BỎ: gemini-2.0-flash (quota free = 0), gemini-1.5-flash (404 not found)
 const MODEL_PRIORITY = [
   "gemini-2.5-flash", 
-  "gemini-1.5-flash", 
+  "gemini-1.5-flash-latest", 
+  "gemini-1.5-flash",
+  "gemini-pro",
+  "gemini-1.0-pro",
   "gemini-2.5-flash-lite", 
-  "gemini-1.5-flash-8b", 
+  "gemini-1.5-flash-8b-latest", 
   "gemini-2.0-flash-lite"
 ];
 
