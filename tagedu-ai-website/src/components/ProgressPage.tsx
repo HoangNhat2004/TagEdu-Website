@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
-import { CheckCircle2, Clock, Lock, TrendingUp } from "lucide-react";
+import { CheckCircle2, Clock, Lock, TrendingUp, Award, BookOpen, Brain, Repeat, GitBranch, Code, Compass } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export function ProgressPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [completedChallenges, setCompletedChallenges] = useState<Record<string, boolean>>({});
 
   const userStr = localStorage.getItem("tagedu_user");
@@ -130,9 +130,9 @@ export function ProgressPage() {
           </div>
           <div className="divide-y divide-white/5">
             {[
-              { id: "challenge7", name: "mission1.title" },
-              { id: "challenge8", name: "mission2.title" },
-              { id: "challenge9", name: "mission3.title" },
+              { id: "challenge1", name: "mission1.title" },
+              { id: "challenge2", name: "mission2.title" },
+              { id: "challenge3", name: "mission3.title" },
             ].map((mission, index, array) => {
               let status: "completed" | "active" | "locked" = "locked";
               if (completedChallenges[mission.id]) {
@@ -172,7 +172,61 @@ export function ProgressPage() {
             })}
           </div>
         </div>
+
+        {/* CSTA Standards Achieved */}
+        {completedCount > 0 && (
+          <div className="glass-card rounded-2xl border border-white/5 overflow-hidden">
+            <div className="p-5 border-b border-white/5">
+              <div className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-amber-400" />
+                <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'Outfit, Inter, sans-serif' }}>
+                  {t("analytics.cstaTitle")}
+                </h2>
+                <span className="ml-auto text-xs text-gray-500 font-medium">{t("analytics.cstaSubtitle")}</span>
+              </div>
+            </div>
+            <div className="divide-y divide-white/5">
+              {[
+                { id: "challenge1", name: "mission1.title", standards: [
+                  { code: "1B-CS-02", en: "Model how computer hardware and software work together", vi: "Mô hình hóa cách phần cứng và phần mềm hoạt động cùng nhau", icon: BookOpen },
+                  { code: "1B-CS-03", en: "Determine solutions for hardware and software problems", vi: "Xác định giải pháp cho vấn đề phần cứng và phần mềm", icon: Brain },
+                ]},
+                { id: "challenge2", name: "mission2.title", standards: [
+                  { code: "1B-AP-10", en: "Create programs using sequences of commands and events", vi: "Thiết lập chương trình với các lệnh tuần tự và sự kiện", icon: Repeat },
+                  { code: "1B-AP-11", en: "Decompose problems into subproblems (selecting functional modules)", vi: "Phân rã bài toán lớn thành các phần nhỏ (chọn module chức năng)", icon: Brain },
+                ]},
+                { id: "challenge3", name: "mission3.title", standards: [
+                  { code: "1B-AP-10", en: "Create programs with sequences, loops, and conditionals", vi: "Tạo chương trình với trình tự, vòng lặp và điều kiện", icon: GitBranch },
+                  { code: "1B-AP-12", en: "Modify or incorporate portions of existing programs", vi: "Chỉnh sửa hoặc tích hợp các phần chương trình hiện có", icon: Code },
+                  { code: "1B-AP-15", en: "Test and debug a program or algorithm", vi: "Kiểm thử và gỡ lỗi chương trình hoặc thuật toán", icon: Compass },
+                ]},
+              ].map((mission) => {
+                if (!completedChallenges[mission.id]) return null;
+                return (
+                  <div key={mission.id} className="p-4">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <CheckCircle2 className="h-4 w-4 text-green-400" />
+                      <span className="text-sm font-semibold text-gray-200">{t(mission.name)}</span>
+                    </div>
+                    <div className="space-y-1.5 ml-6">
+                      {mission.standards.map((std) => (
+                        <div key={std.code} className="flex items-start gap-2">
+                          <std.icon className="h-3.5 w-3.5 text-cyan-400 mt-0.5 shrink-0" />
+                          <div>
+                            <span className="text-[10px] font-mono text-amber-400/80 mr-1.5">{std.code}</span>
+                            <span className="text-xs text-gray-400">{language === 'vi' ? std.vi : std.en}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+

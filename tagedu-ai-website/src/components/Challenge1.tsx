@@ -14,27 +14,27 @@ interface SoftwareItem {
 }
 
 const ALL_ITEMS: SoftwareItem[] = [
-  { id: "os", nameKey: "c7.os", icon: Monitor, category: "system" },
-  { id: "driver", nameKey: "c7.driver", icon: Cpu, category: "system" },
-  { id: "antivirus", nameKey: "c7.antivirus", icon: ShieldCheck, category: "utility" },
-  { id: "backup", nameKey: "c7.backup", icon: Database, category: "utility" },
-  { id: "browser", nameKey: "c7.browser", icon: Globe, category: "application" },
-  { id: "word", nameKey: "c7.word", icon: FileText, category: "application" },
-  { id: "spotify", nameKey: "c7.spotify", icon: Music, category: "application" },
-  { id: "email", nameKey: "c7.email", icon: Mail, category: "application" },
+  { id: "os", nameKey: "c1.os", icon: Monitor, category: "system" },
+  { id: "driver", nameKey: "c1.driver", icon: Cpu, category: "system" },
+  { id: "antivirus", nameKey: "c1.antivirus", icon: ShieldCheck, category: "utility" },
+  { id: "backup", nameKey: "c1.backup", icon: Database, category: "utility" },
+  { id: "browser", nameKey: "c1.browser", icon: Globe, category: "application" },
+  { id: "word", nameKey: "c1.word", icon: FileText, category: "application" },
+  { id: "spotify", nameKey: "c1.spotify", icon: Music, category: "application" },
+  { id: "email", nameKey: "c1.email", icon: Mail, category: "application" },
 ];
 
 const CATEGORIES = [
-  { id: "system", titleKey: "c7.sys" },
-  { id: "utility", titleKey: "c7.util" },
-  { id: "application", titleKey: "c7.app" },
+  { id: "system", titleKey: "c1.sys" },
+  { id: "utility", titleKey: "c1.util" },
+  { id: "application", titleKey: "c1.app" },
 ];
 
 interface ChallengeProps {
   onNavigate: (view: any) => void;
 }
 
-const Challenge7 = ({ onNavigate }: ChallengeProps) => {
+const Challenge1 = ({ onNavigate }: ChallengeProps) => {
   const { t } = useI18n();
 
   // Hàm tạo key lưu trữ riêng theo từng User
@@ -85,7 +85,7 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
         });
         if (res.ok) {
           const data = await res.json();
-          const challengeProgress = data.find((p: any) => p.challenge_id === "challenge7");
+          const challengeProgress = data.find((p: any) => p.challenge_id === "challenge1");
           
           if (challengeProgress) {
             if (challengeProgress.is_completed) {
@@ -136,7 +136,7 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ 
-            challengeId: "challenge7", 
+            challengeId: "challenge1", 
             draftData: JSON.stringify(placed) 
           }),
         });
@@ -164,7 +164,7 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ challengeId: "challenge7" }),
+            body: JSON.stringify({ challengeId: "challenge1" }),
           });
           if (res.ok) {
             // [SỬA] Không set isPracticing là false để tránh bị Reset dữ liệu bởi logic đồng bộ
@@ -196,7 +196,7 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ challengeId: "challenge7" }),
+          body: JSON.stringify({ challengeId: "challenge1" }),
         });
         
         if (res.ok) {
@@ -334,10 +334,10 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="text-xl font-bold text-foreground sm:text-2xl">
-            {t("c7.title")}
+            {t("c1.title")}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {t("c7.desc")}
+            {t("c1.desc")}
           </p>
         </div>
         {(Object.keys(placed).length > 0 || isCloudComplete) && (
@@ -357,7 +357,7 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
       {(isComplete || (isCloudComplete && !isPracticing)) ? (
         <div className="flex flex-col items-center justify-center gap-6 rounded-xl border border-success bg-success/5 p-8 text-center mt-8">
           <p className="text-xl font-semibold text-success">
-            {t("c7.success")}
+            {t("c1.success")}
           </p>
           <div className="flex gap-4">
             <Button onClick={handleRetry} variant="outline" size="lg" disabled={isResetting}>
@@ -434,4 +434,4 @@ const Challenge7 = ({ onNavigate }: ChallengeProps) => {
   );
 };
 
-export default Challenge7;
+export default Challenge1;

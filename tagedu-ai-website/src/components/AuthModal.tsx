@@ -81,6 +81,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     email: "",
     password: "",
     otp: "",
+    role: "learner",
   });
 
   // Field-level validation errors
@@ -98,6 +99,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         email: "",
         password: "",
         otp: "",
+        role: "learner",
       });
     }
   }, [isOpen, language]);
@@ -119,7 +121,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     setSuccessMsg("");
     setForgotStep(1);
     setFieldErrors({});
-    setFormData({ fullName: "", email: "", password: "", otp: "" });
+    setFormData({ fullName: "", email: "", password: "", otp: "", role: "learner" });
   };
 
   // Email format validator
@@ -179,7 +181,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     const url = isLogin ? `${API_URL}/login` : `${API_URL}/register`;
     const payload = isLogin
       ? { email: formData.email, password: formData.password, language }
-      : { fullName: formData.fullName, email: formData.email, password: formData.password, language };
+      : { fullName: formData.fullName, email: formData.email, password: formData.password, language, role: formData.role };
 
     try {
       const response = await fetch(url, {
@@ -196,6 +198,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           localStorage.setItem("tagedu_user", JSON.stringify(data.user));
           onSuccess(data.user);
           onClose();
+          // [MỚI] Kích hoạt kiểm tra Onboarding
+          setTimeout(() => window.dispatchEvent(new Event("login_success")), 300);
         } else {
           setSuccessMsg(t("auth.registerSuccess"));
           setTimeout(() => switchMode("login"), 1500);
@@ -275,6 +279,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         localStorage.setItem("tagedu_user", JSON.stringify(data.user));
         onSuccess(data.user);
         onClose();
+        // [MỚI] Kích hoạt kiểm tra Onboarding
+        setTimeout(() => window.dispatchEvent(new Event("login_success")), 300);
       } else throw new Error(data.error);
     } catch (error: any) {
       setErrorMsg(error.message);
@@ -445,6 +451,45 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                       </div>
                       <FieldError msg={fieldErrors.password || ""} />
                     </div>
+
+                    {/* Role Selection (Register Only) */}
+                    {mode === "register" && (
+                      <div className="pt-2">
+                        <p className="text-sm font-medium text-gray-300 mb-3">{t("auth.roleLabel")}</p>
+                        <div className="flex gap-4">
+                          <label className={`flex-1 flex items-center justify-center gap-2 rounded-xl border p-3 cursor-pointer transition-all ${
+                            formData.role === 'learner' 
+                              ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400' 
+                              : 'border-white/10 bg-white/5 text-gray-400 hover:bg-white/10'
+                          }`}>
+                            <input 
+                              type="radio" 
+                              name="role" 
+                              value="learner" 
+                              checked={formData.role === 'learner'} 
+                              onChange={handleChange} 
+                              className="sr-only" 
+                            />
+                            <span className="text-sm font-bold">{t("auth.roleLearner")}</span>
+                          </label>
+                          <label className={`flex-1 flex items-center justify-center gap-2 rounded-xl border p-3 cursor-pointer transition-all ${
+                            formData.role === 'guardian' 
+                              ? 'border-purple-500 bg-purple-500/10 text-purple-400' 
+                              : 'border-white/10 bg-white/5 text-gray-400 hover:bg-white/10'
+                          }`}>
+                            <input 
+                              type="radio" 
+                              name="role" 
+                              value="guardian" 
+                              checked={formData.role === 'guardian'} 
+                              onChange={handleChange} 
+                              className="sr-only" 
+                            />
+                            <span className="text-sm font-bold">{t("auth.roleGuardian")}</span>
+                          </label>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {mode === "login" && (

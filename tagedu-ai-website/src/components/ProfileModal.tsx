@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { X, Mail, User as UserIcon, Loader2, UserCog, BookUser, Shield, AlertCircle, CheckCircle2 } from "lucide-react";
+import { X, Mail, User as UserIcon, Loader2, UserCog, BookUser, Shield, AlertCircle, CheckCircle2, BarChart3 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { AnalyticsDashboard } from "./AnalyticsDashboard";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -22,7 +23,7 @@ const inputClassDisabled =
   "w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pl-10 pr-4 text-sm text-gray-400 cursor-not-allowed";
 
 export function ProfileModal({ isOpen, onClose, currentUser, onSuccess }: ProfileModalProps) {
-  const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'analytics'>('profile');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -70,6 +71,11 @@ export function ProfileModal({ isOpen, onClose, currentUser, onSuccess }: Profil
     e.preventDefault();
     setErrorMsg("");
     setSuccessMsg("");
+    if (!formData.fullName || formData.fullName.trim().length < 2) {
+      setErrorMsg(t("auth.validation.nameRequired"));
+      return;
+    }
+
     setIsLoading(true);
 
     const token = localStorage.getItem("tagedu_token");
@@ -217,6 +223,16 @@ export function ProfileModal({ isOpen, onClose, currentUser, onSuccess }: Profil
           >
             <Shield className="h-4 w-4" /> {t("profile.passwordTab")}
           </button>
+          {currentUser?.role === 'learner' && (
+            <button
+              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                activeTab === 'analytics' ? 'border-b-2 border-cyan-400 text-cyan-400 bg-cyan-500/5' : 'text-gray-400 hover:text-gray-300 hover:bg-white/5'
+              }`}
+              onClick={() => { setActiveTab('analytics'); setErrorMsg(""); setSuccessMsg(""); }}
+            >
+              <BarChart3 className="h-4 w-4" /> {t("profile.analyticsTab")}
+            </button>
+          )}
         </div>
 
         {/* Form area */}
@@ -270,7 +286,7 @@ export function ProfileModal({ isOpen, onClose, currentUser, onSuccess }: Profil
                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : t("profile.saveChanges")}
               </button>
             </form>
-          ) : (
+          ) : activeTab === 'password' ? (
             <form onSubmit={handlePasswordSubmit} className="space-y-4 pb-2">
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-300">{t("profile.currentPassword")}</label>
@@ -309,6 +325,8 @@ export function ProfileModal({ isOpen, onClose, currentUser, onSuccess }: Profil
                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : t("profile.passwordTab")}
               </button>
             </form>
+          ) : (
+            <AnalyticsDashboard />
           )}
         </div>
       </div>

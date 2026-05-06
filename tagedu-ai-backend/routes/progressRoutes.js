@@ -126,7 +126,7 @@ router.post('/progress/reset', authenticateToken, (req, res) => {
 
   // [SỬA] Đặt về dữ liệu mặc định tùy theo loại thử thách để Frontend dễ dàng đồng bộ
   let resetData = '{}';
-  if (challengeId === "challenge8") {
+  if (challengeId === "challenge2") {
     resetData = JSON.stringify({ currentQ: 0, completed: false });
   }
 

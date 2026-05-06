@@ -10,7 +10,11 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export function AdminDashboard() {
   const { t } = useI18n();
-  const [stats, setStats] = useState({ totalUsers: 0, totalMessages: 0 });
+  const [stats, setStats] = useState({ 
+    totalLearners: 0, 
+    totalGuardians: 0, 
+    totalMessages: 0 
+  });
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
@@ -24,7 +28,7 @@ export function AdminDashboard() {
 
   // State cho tính năng Giám sát lịch sử Chat AI
   const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
-  const [selectedUserForLogs, setSelectedUserForLogs] = useState<{ id: number; name: string } | null>(null);
+  const [selectedUserForLogs, setSelectedUserForLogs] = useState<{ id: number; name: string; role: string } | null>(null);
   const [chatLogs, setChatLogs] = useState<any[]>([]);
   const [isLogsLoading, setIsLogsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("landing");
@@ -34,6 +38,14 @@ export function AdminDashboard() {
   const [chatSearch, setChatSearch] = useState("");
 
   const token = localStorage.getItem("tagedu_token");
+
+  // [MỚI] Hàm tính tuổi từ ngày sinh
+  const calculateAge = (dateOfBirth: string | null) => {
+    if (!dateOfBirth) return null;
+    const dob = new Date(dateOfBirth);
+    const now = new Date();
+    return Math.floor((now.getTime() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -68,8 +80,8 @@ export function AdminDashboard() {
     fetchData();
   }, []);
 
-  const viewUserLogs = async (userId: number, userName: string) => {
-    setSelectedUserForLogs({ id: userId, name: userName });
+  const viewUserLogs = async (userId: number, userName: string, role: string) => {
+    setSelectedUserForLogs({ id: userId, name: userName, role });
     setIsLogsModalOpen(true);
     setIsLogsLoading(true);
     setChatLogs([]);
@@ -156,14 +168,23 @@ export function AdminDashboard() {
 
         {errorMsg && <div className="mb-4 text-red-200 bg-red-900/40 p-3 rounded-lg border border-red-500/50 backdrop-blur-sm">{errorMsg}</div>}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           <div className="glass-card p-6 rounded-2xl flex items-center gap-4 transition-all hover:shadow-[0_0_30px_rgba(0,212,255,0.15)] group">
             <div className="bg-cyan-500/20 p-4 rounded-xl text-cyan-400 border border-cyan-500/30 group-hover:scale-110 transition-transform">
               <Users className="h-8 w-8" />
             </div>
             <div>
-              <p className="text-sm text-cyan-100 font-medium">{t("admin.totalStudents")}</p>
-              <p className="text-3xl font-extrabold text-white drop-shadow-[0_0_8px_rgba(0,212,255,0.5)]">{stats.totalUsers}</p>
+              <p className="text-sm text-cyan-100 font-medium">{t("admin.totalLearners") || "Learners"}</p>
+              <p className="text-3xl font-extrabold text-white drop-shadow-[0_0_8px_rgba(0,212,255,0.5)]">{stats.totalLearners}</p>
+            </div>
+          </div>
+          <div className="glass-card p-6 rounded-2xl flex items-center gap-4 transition-all hover:shadow-[0_0_30px_rgba(236,72,153,0.15)] group">
+            <div className="bg-pink-500/20 p-4 rounded-xl text-pink-400 border border-pink-500/30 group-hover:scale-110 transition-transform">
+              <ShieldAlert className="h-8 w-8" />
+            </div>
+            <div>
+              <p className="text-sm text-pink-100 font-medium">{t("admin.totalGuardians") || "Guardians"}</p>
+              <p className="text-3xl font-extrabold text-white drop-shadow-[0_0_8px_rgba(236,72,153,0.5)]">{stats.totalGuardians}</p>
             </div>
           </div>
           <div className="glass-card p-6 rounded-2xl flex items-center gap-4 transition-all hover:shadow-[0_0_30px_rgba(168,85,247,0.15)] group">
@@ -210,7 +231,10 @@ export function AdminDashboard() {
                   <th className="p-4 font-semibold tracking-wider">{t("admin.colId")}</th>
                   <th className="p-4 font-semibold tracking-wider">{t("admin.colName")}</th>
                   <th className="p-4 font-semibold tracking-wider">{t("admin.colEmail")}</th>
+                  <th className="p-4 font-semibold tracking-wider">{t("admin.colRole") || "Role"}</th>
+                  <th className="p-4 font-semibold tracking-wider">{t("admin.colGuardian") || "Guardian"}</th>
                   <th className="p-4 font-semibold text-center tracking-wider">{t("admin.colMessages")}</th>
+                  <th className="p-4 font-semibold text-center tracking-wider">{t("admin.colAge")}</th>
                   <th className="p-4 font-semibold text-center tracking-wider">{t("admin.colProgress")}</th>
                   <th className="p-4 font-semibold text-center tracking-wider">{t("admin.colActions")}</th>
                 </tr>
@@ -225,6 +249,16 @@ export function AdminDashboard() {
                       <td className="p-4 text-gray-400 font-mono">#{u.id}</td>
                       <td className="p-4 font-bold text-white">{u.full_name}</td>
                       <td className="p-4 text-gray-300">{u.email}</td>
+                      <td className="p-4">
+                        <span className={`text-[10px] px-2 py-0.5 rounded border ${
+                          u.role === 'guardian' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
+                        }`}>
+                          {u.role?.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="p-4 text-gray-400 text-sm">
+                        {u.guardian_name || "—"}
+                      </td>
                       <td className="p-4 text-center">
                         <div className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-300 text-xs font-bold">
                           <MessageSquare className="h-3.5 w-3.5 text-cyan-400" />
@@ -232,16 +266,34 @@ export function AdminDashboard() {
                         </div>
                       </td>
                       <td className="p-4 text-center">
-                        <div className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${
-                          isDoneAll ? 'bg-green-500/20 text-green-400 border-green-500/30 shadow-[0_0_10px_rgba(74,222,128,0.2)]' : 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-                        }`}>
-                          <Target className="h-3.5 w-3.5" />
-                          {completed}/{totalChallenges}
-                        </div>
+                        {(() => {
+                          const age = calculateAge(u.date_of_birth);
+                          return age !== null ? (
+                            <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-bold border ${
+                              age <= 8 ? 'bg-pink-500/20 text-pink-400 border-pink-500/30' :
+                              age <= 12 ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+                              'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                            }`}>{age}</span>
+                          ) : (
+                            <span className="text-gray-500 text-xs">{t("admin.noAge")}</span>
+                          );
+                        })()}
+                      </td>
+                      <td className="p-4 text-center">
+                        {u.role === 'guardian' ? (
+                          <span className="text-gray-500 text-xs">—</span>
+                        ) : (
+                          <div className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${
+                            isDoneAll ? 'bg-green-500/20 text-green-400 border-green-500/30 shadow-[0_0_10px_rgba(74,222,128,0.2)]' : 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+                          }`}>
+                            <Target className="h-3.5 w-3.5" />
+                            {completed}/{totalChallenges}
+                          </div>
+                        )}
                       </td>
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => viewUserLogs(u.id, u.full_name)} className="p-2 text-cyan-400 hover:bg-cyan-500/20 rounded-lg transition-colors border border-transparent hover:border-cyan-500/30" title={t("admin.viewChatHistory").replace("{name}", u.full_name)}>
+                          <button onClick={() => viewUserLogs(u.id, u.full_name, u.role)} className="p-2 text-cyan-400 hover:bg-cyan-500/20 rounded-lg transition-colors border border-transparent hover:border-cyan-500/30" title={t("admin.viewChatHistory").replace("{name}", u.full_name)}>
                             <Eye className="h-5 w-5" />
                           </button>
                           <button onClick={() => confirmDeleteUser(u.id, u.full_name)} className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors border border-transparent hover:border-red-500/30" title={t("admin.deleteAccount")}>
@@ -273,7 +325,7 @@ export function AdminDashboard() {
                       <p className="text-xs text-gray-500 mt-0.5 font-mono">#{u.id}</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => viewUserLogs(u.id, u.full_name)} className="p-2 text-cyan-400 hover:bg-cyan-500/20 rounded-lg transition-colors">
+                      <button onClick={() => viewUserLogs(u.id, u.full_name, u.role)} className="p-2 text-cyan-400 hover:bg-cyan-500/20 rounded-lg transition-colors">
                         <Eye className="h-5 w-5" />
                       </button>
                       <button onClick={() => confirmDeleteUser(u.id, u.full_name)} className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors">
@@ -281,17 +333,29 @@ export function AdminDashboard() {
                       </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-4">
+                    <div className="flex items-center gap-2 mt-4 flex-wrap">
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-gray-300 text-xs font-bold">
                       <MessageSquare className="h-3.5 w-3.5 text-cyan-400" />
                       {u.message_count || 0} {t("admin.messages")}
                     </div>
-                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
-                      isDoneAll ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-                    }`}>
-                      <Target className="h-3.5 w-3.5" />
-                      {completed}/{totalChallenges} {t("admin.challenges")}
-                    </div>
+                    {(() => {
+                      const age = calculateAge(u.date_of_birth);
+                      return age !== null ? (
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${
+                          age <= 8 ? 'bg-pink-500/20 text-pink-400 border-pink-500/30' :
+                          age <= 12 ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+                          'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                        }`}>{age} {t("admin.colAge").toLowerCase()}</span>
+                      ) : null;
+                    })()}
+                    {u.role !== 'guardian' && (
+                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
+                        isDoneAll ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+                      }`}>
+                        <Target className="h-3.5 w-3.5" />
+                        {completed}/{totalChallenges} {t("admin.challenges")}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -343,10 +407,16 @@ export function AdminDashboard() {
       {isLogsModalOpen && selectedUserForLogs && (() => {
         const TABS = [
           { key: "landing",    label: t("admin.tabHome") },
-          { key: "challenge7", label: t("admin.tabChallenge1") },
-          { key: "challenge8", label: t("admin.tabChallenge2") },
-          { key: "challenge9", label: t("admin.tabChallenge3") },
-        ];
+          { key: "challenge1", label: t("admin.tabChallenge1") },
+          { key: "challenge2", label: t("admin.tabChallenge2") },
+          { key: "challenge3", label: t("admin.tabChallenge3") },
+        ].filter(tab => {
+          // Nếu là phụ huynh, chỉ hiện tab Trang chủ
+          if (selectedUserForLogs.role === 'guardian') {
+            return tab.key === 'landing';
+          }
+          return true;
+        });
 
         const filteredLogs = chatLogs
           .filter(log => log.challenge_id === activeTab)
@@ -507,6 +577,21 @@ export function AdminDashboard() {
                                   <ThumbsDown className="h-3.5 w-3.5" /> {t("admin.feedbackNotHelpful")}
                                 </span>
                               )}
+                            </div>
+                          )}
+
+                          {/* [MỚI] Hint Level badge - Hiển thị cấp độ gợi ý của AI */}
+                          {isAI && log.hint_level && log.hint_level !== 'none' && (
+                            <div className="flex items-center gap-1.5 ml-1 mt-1 opacity-80">
+                              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold border ${
+                                log.hint_level === 'conceptual' 
+                                  ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' 
+                                  : log.hint_level === 'directional'
+                                  ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                                  : 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
+                              }`}>
+                                {t("hint.label")} {t(`hint.${log.hint_level}`)}
+                              </span>
                             </div>
                           )}
 

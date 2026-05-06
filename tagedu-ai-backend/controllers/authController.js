@@ -6,9 +6,31 @@ const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 exports.register = async (req, res) => {
-  const { fullName, email, password, language } = req.body;
+  const { fullName, email, password, language, role } = req.body;
   const lang = language || 'vi';
   if (!fullName || !email || !password) return res.status(400).json({ error: lang === 'en' ? 'Please fill in all fields!' : 'Vui lòng điền đầy đủ thông tin!' });
+
+  // [VALIDATION] Email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: lang === 'en' ? 'Invalid email format!' : 'Định dạng email không hợp lệ!' });
+  }
+
+  // [VALIDATION] Name length
+  if (fullName.trim().length < 2 || fullName.length > 100) {
+    return res.status(400).json({ error: lang === 'en' ? 'Name must be between 2 and 100 characters.' : 'Họ tên phải từ 2 đến 100 ký tự.' });
+  }
+
+  // [VALIDATION] Password length
+  if (password.length < 6) {
+    return res.status(400).json({ error: lang === 'en' ? 'Password must be at least 6 characters.' : 'Mật khẩu phải có ít nhất 6 ký tự.' });
+  }
+
+  // Validate role to prevent users from assigning themselves as 'admin'
+  let userRole = 'learner';
+  if (role === 'guardian') {
+    userRole = 'guardian';
+  }
 
   try {
     const [existingUsers] = await db.promise().query('SELECT * FROM users WHERE email = ?', [email]);
@@ -16,11 +38,11 @@ exports.register = async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const [result] = await db.promise().query(
-      'INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)',
-      [fullName, email, passwordHash]
+      'INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, ?)',
+      [fullName, email, passwordHash, userRole]
     );
 
-    res.status(201).json({ message: lang === 'en' ? 'Registration successful!' : 'Đăng ký tài khoản thành công!', user: { id: result.insertId, fullName: fullName, email: email, role: 'user' } });
+    res.status(201).json({ message: lang === 'en' ? 'Registration successful!' : 'Đăng ký tài khoản thành công!', user: { id: result.insertId, fullName: fullName, email: email, role: userRole } });
   } catch (error) {
     res.status(500).json({ error: lang === 'en' ? 'System error during registration.' : 'Lỗi hệ thống khi đăng ký.' });
   }
@@ -41,7 +63,7 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '24h' });
 
-    res.json({ message: lang === 'en' ? 'Login successful!' : 'Đăng nhập thành công!', token, user: { id: user.id, fullName: user.full_name, email: user.email, profileBio: user.profile_bio, role: user.role } });
+    res.json({ message: lang === 'en' ? 'Login successful!' : 'Đăng nhập thành công!', token, user: { id: user.id, fullName: user.full_name, email: user.email, profileBio: user.profile_bio, role: user.role, dateOfBirth: user.date_of_birth || null } });
   } catch (error) {
     res.status(500).json({ error: lang === 'en' ? 'System error during login.' : 'Lỗi hệ thống khi đăng nhập.' });
   }
@@ -82,16 +104,16 @@ exports.googleLogin = async (req, res) => {
       const randomPassword = Math.random().toString(36).slice(-8);
       const passwordHash = await bcrypt.hash(randomPassword, 10);
       const [result] = await db.promise().query(
-        'INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)',
-        [name, email, passwordHash]
+        'INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, ?)',
+        [name, email, passwordHash, 'learner']
       );
-      user = { id: result.insertId, full_name: name, email: email, profile_bio: null, role: 'user' }; 
+      user = { id: result.insertId, full_name: name, email: email, profile_bio: null, role: 'learner', date_of_birth: null }; 
     } else {
       user = users[0];
     }
 
     const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '24h' });
-    res.json({ message: lang === 'en' ? 'Google login successful!' : 'Đăng nhập Google thành công!', token, user: { id: user.id, fullName: user.full_name, email: user.email, profileBio: user.profile_bio, role: user.role } });
+    res.json({ message: lang === 'en' ? 'Google login successful!' : 'Đăng nhập Google thành công!', token, user: { id: user.id, fullName: user.full_name, email: user.email, profileBio: user.profile_bio, role: user.role, dateOfBirth: user.date_of_birth || null } });
   } catch (error) {
     console.error("Google login error:", error.message);
     res.status(500).json({ error: lang === 'en' ? 'Google authentication failed.' : 'Xác thực Google thất bại.' });
@@ -196,7 +218,7 @@ exports.updateProfile = async (req, res) => {
 
     res.json({ 
       message: lang === 'en' ? 'Profile updated successfully!' : 'Cập nhật hồ sơ thành công!', 
-      user: { id: users[0].id, fullName: users[0].full_name, email: users[0].email, profileBio: users[0].profile_bio, role: users[0].role } 
+      user: { id: users[0].id, fullName: users[0].full_name, email: users[0].email, profileBio: users[0].profile_bio, role: users[0].role, dateOfBirth: users[0].date_of_birth || null } 
     });
   } catch (error) {
     console.error("Lỗi cập nhật profile:", error);

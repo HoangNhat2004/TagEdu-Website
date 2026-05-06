@@ -9,7 +9,12 @@ const getApiKeys = () => {
 
 // Lưu vết con trỏ Key hiện tại để xoay vòng
 let currentKeyIndex = 0;
-const MODEL_PRIORITY = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest", "gemini-1.5-flash"];
+// [CẬP NHẬT 30/04/2026] Danh sách model theo thứ tự ưu tiên (đã xác nhận khả dụng từ ListModels API)
+// - gemini-2.5-flash: model chính, có free tier (20 RPD, 5 RPM) nhưng hay bị 503 do quá tải
+// - gemini-2.5-flash-lite: phiên bản nhẹ hơn, ít bị quá tải hơn
+// - gemini-2.0-flash-lite: dự phòng cuối cùng
+// ĐÃ LOẠI BỎ: gemini-2.0-flash (quota free = 0), gemini-1.5-flash (404 not found)
+const MODEL_PRIORITY = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash-lite"];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -27,47 +32,83 @@ const getGeminiModel = (chatHistory, systemInstruction, modelName) => {
   return { chat, model };
 };
 
-const streamGeminiWithRotationAndRetry = async (chatHistory, systemInstruction, message, maxRetries = 3) => {
-  let attempt = 0;
-  let modelIndex = 0;
+/**
+ * [CẬP NHẬT 30/04/2026] Chiến lược retry tối ưu cho lỗi 503 (quá tải):
+ * 
+ * Với MỖI model trong danh sách ưu tiên:
+ *   → Thử 2 VÒNG (rounds) qua tất cả keys
+ *   → Vòng 1: delay ngắn (3-8s) — thử nhanh xem key nào may mắn
+ *   → Vòng 2: delay dài (8-15s) — chờ server phục hồi
+ * 
+ * Tổng cộng: 3 models × 2 rounds × 6 keys = tối đa 36 lần thử
+ * Thời gian tối đa: ~90 giây (đủ để server Google phục hồi từ 503)
+ * 
+ * Lỗi 429 (hết quota): xoay key ngay, không cần delay
+ * Lỗi 404 (model không tồn tại): bỏ qua model, thử model tiếp theo
+ */
+const streamGeminiWithRotationAndRetry = async (chatHistory, systemInstruction, message) => {
+  const keys = getApiKeys();
   let lastError = null;
+  const MAX_ROUNDS = 2; // Số vòng thử cho mỗi model
 
-  while (attempt <= maxRetries) {
+  for (let modelIndex = 0; modelIndex < MODEL_PRIORITY.length; modelIndex++) {
     const currentModelName = MODEL_PRIORITY[modelIndex];
-    try {
-      const { chat } = getGeminiModel(chatHistory, systemInstruction, currentModelName);
-      const result = await chat.sendMessageStream(message);
-      return { result, modelUsed: currentModelName };
-    } catch (error) {
-      lastError = error;
-      const status = Number(error?.status);
-      const keys = getApiKeys();
-      
-      console.log(`[Cảnh báo AI] Model: ${currentModelName} | Key: ${currentKeyIndex + 1} | Lỗi: ${status}`);
 
-      // Nếu lỗi do Model không tồn tại (404) hoặc quá tải (503/500), hãy chuyển sang model dự phòng
-      if ((status === 404 || status === 503 || status === 500) && modelIndex < MODEL_PRIORITY.length - 1) {
-        modelIndex++;
-        console.log(`[Model Fallback] 🔄 Chuyển sang model: ${MODEL_PRIORITY[modelIndex]}`);
-        continue; 
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      if (round > 0) {
+        console.log(`[Round ${round + 1}] 🔁 Thử lại vòng ${round + 1} cho model ${currentModelName}...`);
       }
 
-      // Nếu lỗi do giới hạn Key (429), hãy chuyển sang Key khác
-      if ((status === 429) && keys.length > 1) {
-          currentKeyIndex = (currentKeyIndex + 1) % keys.length;
-          modelIndex = 0; // Thử lại từ model tốt nhất với Key mới
-          console.log(`[Key Rotation] 🔄 Chuyển sang Key số ${currentKeyIndex + 1}`);
-          attempt += 1;
-          continue; 
-      }
-      
-      if (!shouldRetryGeminiError(error) || attempt === maxRetries) throw error;
+      // Thử tất cả keys cho model hiện tại trong vòng này
+      for (let keyAttempt = 0; keyAttempt < keys.length; keyAttempt++) {
+        try {
+          const { chat } = getGeminiModel(chatHistory, systemInstruction, currentModelName);
+          const result = await chat.sendMessageStream(message);
+          console.log(`[AI OK] ✅ Model: ${currentModelName} | Key: ${currentKeyIndex + 1}/${keys.length} | Round: ${round + 1}`);
+          return { result, modelUsed: currentModelName };
+        } catch (error) {
+          lastError = error;
+          const status = Number(error?.status);
 
-      const delayMs = 1000 * Math.pow(2, attempt);
-      await sleep(delayMs);
-      attempt += 1;
+          console.log(`[Cảnh báo AI] Model: ${currentModelName} | Key: ${currentKeyIndex + 1}/${keys.length} | Lỗi: ${status} | Round: ${round + 1}`);
+
+          // Lỗi 404: model không tồn tại → bỏ qua model này hoàn toàn
+          if (status === 404) {
+            console.log(`[Model Skip] ⏭️ Model ${currentModelName} không tồn tại, thử model tiếp theo...`);
+            round = MAX_ROUNDS; // Thoát luôn cả vòng round
+            break; // Thoát vòng key
+          }
+
+          // Lỗi retryable (429, 500, 502, 503, 504) → xoay key
+          if (shouldRetryGeminiError(error)) {
+            currentKeyIndex = (currentKeyIndex + 1) % keys.length;
+            console.log(`[Key Rotation] 🔄 Chuyển sang Key số ${currentKeyIndex + 1}`);
+
+            // Lỗi server (503/500/502/504): chờ delay tùy theo vòng
+            if (status === 503 || status === 500 || status === 502 || status === 504) {
+              // Vòng 1: delay 3-8s | Vòng 2: delay 8-15s
+              const baseDelay = round === 0 ? 3000 : 8000;
+              const maxDelay = round === 0 ? 8000 : 15000;
+              const delayMs = Math.min(baseDelay + (1000 * keyAttempt), maxDelay);
+              console.log(`[Retry] ⏳ Chờ ${Math.round(delayMs / 1000)}s trước khi thử lại...`);
+              await sleep(delayMs);
+            }
+            continue;
+          }
+
+          // Lỗi không thể retry (400, 403, v.v.) → dừng luôn
+          throw error;
+        }
+      }
+    }
+
+    // Đã thử hết tất cả rounds + keys cho model hiện tại
+    if (modelIndex < MODEL_PRIORITY.length - 1) {
+      console.log(`[Model Fallback] 🔄 Đã thử hết ${MAX_ROUNDS} vòng × ${keys.length} keys cho ${currentModelName}, chuyển sang ${MODEL_PRIORITY[modelIndex + 1]}`);
     }
   }
+
+  console.log(`❌ Đã thử hết tất cả ${MODEL_PRIORITY.length} models × ${MAX_ROUNDS} rounds × ${keys.length} keys, không thành công.`);
   throw lastError;
 };
 
@@ -119,59 +160,71 @@ exports.deleteChatSession = async (req, res) => {
   }
 };
 
+// [MỚI] Hàm xác định cấp độ gợi ý dựa trên số tin nhắn User đã gửi trong phiên
+const determineHintLevel = (userMessageCount) => {
+  if (userMessageCount <= 1) return 'conceptual';
+  if (userMessageCount <= 3) return 'directional';
+  return 'syntax';
+};
+
+// [MỚI] Hàm tạo chỉ dẫn phụ cho AI theo cấp độ gợi ý hiện tại (Toàn bộ bằng Tiếng Anh để AI xử lý logic tốt hơn)
+const getHintInstruction = (hintLevel) => {
+  const hints = {
+    conceptual: "[HINT LEVEL: CONCEPTUAL] ONLY ask open-ended questions about the CONCEPT. Do NOT mention syntax, variable names, or code patterns. Help the student think about the 'why'.",
+    directional: "[HINT LEVEL: DIRECTIONAL] Point the student to the RIGHT AREA or concept (e.g., 'think about assignment'). Mention general programming terms but NO actual code solutions.",
+    syntax: "[HINT LEVEL: SYNTAX-FOCUSED] Explain syntax rules in general (e.g., 'In Python, we use the = operator'). Give a SIMILAR but DIFFERENT code example. NEVER write the exact solution code."
+  };
+  return hints[hintLevel] || "";
+};
+
 exports.handleChat = async (req, res) => {
   const userId = req.user.userId;
-  const { challengeId = 'landing', sessionId = 'default_session', message, language = 'vi' } = req.body;
-  if (!message) return res.status(400).json({ error: 'Thiếu tin nhắn từ người dùng' });
+  const { challengeId = 'landing', sessionId = 'default_session', message } = req.body;
+  if (!message || message.trim().length === 0) {
+    return res.status(400).json({ error: 'Tin nhắn không được để trống' });
+  }
+
+  if (message.length > 2000) {
+    return res.status(400).json({ error: 'Tin nhắn quá dài (tối đa 2000 ký tự)' });
+  }
 
   let challengeContext = "";
-  let systemInstruction = "";
-
-  if (language === 'en') {
-    // English system prompt
-    if (challengeId === "challenge7") {
-      challengeContext = "The student is working on Challenge 1: Software Classification. The task requires the student to distinguish and sort software (such as Windows, Word, Excel, Chrome, WinRAR...) into 3 groups: System Software, Application Software, and Utility Software. If the student asks about a specific software, guide them to analyze its purpose so they can figure out the correct group themselves.";
-    } else if (challengeId === "challenge8") {
-      challengeContext = "The student is working on Challenge 2: Spacecraft Software Features. The task requires the student to act as an engineer, reason and list the necessary features for a spacecraft control system (e.g., engine management, oxygen monitoring, Earth communication...). Encourage them to imagine real-world scenarios in space.";
-    } else if (challengeId === "challenge9") {
-      challengeContext = "The student is working on Mission Orbit 01 (Python). The task is to define a 'fuelLevel' variable (value 0-100) and invoke 'calculateTrajectory()'. Guide them on Python syntax if asked, but NEVER give direct code answers.";
-    } else {
-      challengeContext = "The student is on the TagEdu Homepage. Briefly and engagingly introduce the platform as a diverse learning environment to master Computer Science foundations (like Software logic, IT concepts) and Programming concepts (like Python) through progressive interactive challenges (from drag-and-drop to actual coding). Encourage them to dive into the Mission Map.";
-    }
-
-    systemInstruction = `
-      You are the pedagogical AI Assistant of the TagEdu learning platform.
-      [CURRENT STUDENT CONTEXT]: ${challengeContext}
-      [CORE PRINCIPLES]:
-      1. You must NEVER give direct answers or write code for the student under any circumstances.
-      2. You may only suggest thinking approaches, explain logic, give similar examples, and ask open-ended questions so the student thinks for themselves.
-      3. Always be friendly and motivating. Use "I" for yourself and "you" for the student. DO NOT repeat greetings (e.g., "Hello") if the conversation is already ongoing.
-      4. Keep responses concise and well-structured. Use Markdown (bold, bullet points) for readability.
-      5. Always respond in the same language the student used in their message. If they ask in Vietnamese, respond in Vietnamese. If they ask in English, respond in English.
-    `;
+  
+  if (challengeId === "challenge1") {
+    challengeContext = "Mission: Software Classification (Windows, Chrome, Word...). Goal: Sort into System/App/Utility.";
+  } else if (challengeId === "challenge2") {
+    challengeContext = "Mission: Spacecraft Features. Goal: List engine management, oxygen monitoring, etc.";
+  } else if (challengeId === "challenge3") {
+    challengeContext = "Mission: Orbit 01 (Python). Goal: Define 'fuelLevel' and call 'calculateTrajectory()'.";
   } else {
-    // Vietnamese system prompt (original)
-    if (challengeId === "challenge7") {
-      challengeContext = "Học viên đang làm Thử thách 1: Phân loại phần mềm. Đề bài yêu cầu học viên phân biệt và xếp các phần mềm (như Windows, Word, Excel, Chrome, WinRAR...) vào 3 nhóm: Phần mềm Hệ thống, Phần mềm Ứng dụng, và Phần mềm Tiện ích. Nếu học viên hỏi về một phần mềm cụ thể, hãy hướng dẫn họ phân tích mục đích sử dụng của nó để tự tìm ra nhóm phù hợp.";
-    } else if (challengeId === "challenge8") {
-      challengeContext = "Học viên đang làm Thử thách 2: Chức năng phần mềm Tàu vũ trụ. Đề bài yêu cầu học viên đóng vai kỹ sư, suy luận và liệt kê các tính năng cần thiết cho hệ thống điều khiển một con tàu vũ trụ (ví dụ: quản lý động cơ, theo dõi oxy, liên lạc trái đất...). Hãy khuyến khích họ tưởng tượng ra các tình huống thực tế trên không gian.";
-    } else if (challengeId === "challenge9") {
-      challengeContext = "Học viên đang làm Thử thách Nhiệm vụ Quỹ đạo 01 (Python). Họ cần khai báo biến 'fuelLevel' (0-100) và gọi hàm 'calculateTrajectory()'. Hãy hướng dẫn cú pháp Python nếu cần, tuyệt đối không viết code sẵn.";
-    } else {
-      challengeContext = "Học viên đang ở Trang chủ TagEdu. Hãy giới thiệu ngắn gọn, hấp dẫn về nền tảng như một môi trường để học hỏi các nền tảng Khoa học Máy tính (Khái niệm IT, Logic phần mềm) và Lập trình (Python) thông qua các thử thách tương tác đa dạng (từ kéo thả, trắc nghiệm cho đến viết code). Khuyến khích họ bắt đầu khám phá Bản đồ Thử thách (Mission Map).";
-    }
-
-    systemInstruction = `
-      Bạn là Trợ lý AI sư phạm của nền tảng học tập TagEdu. 
-      [BỐI CẢNH HIỆN TẠI CỦA HỌC VIÊN]: ${challengeContext}
-      [NGUYÊN TẮC CỐT LÕI]: 
-      1. Tuyệt đối KHÔNG ĐƯỢC đưa ra đáp án trực tiếp hoặc viết code hộ dưới mọi hình thức.
-      2. Chỉ được phép gợi ý tư duy, giải thích logic, đưa ra ví dụ tương tự và đặt câu hỏi mở để học viên tự suy nghĩ.
-      3. Luôn xưng "mình" và gọi người dùng là "bạn" một cách thân thiện, tạo động lực. KHÔNG lặp lại các câu chào hỏi (ví dụ: "Chào bạn") nếu cuộc trò chuyện đã bắt đầu. Hãy đi thẳng vào vấn đề.
-      4. Trình bày ngắn gọn, súc tích, sử dụng Markdown (in đậm, bullet points) cho dễ đọc.
-      5. Luôn trả lời bằng chính ngôn ngữ mà học viên sử dụng. Nếu học viên hỏi bằng tiếng Việt thì trả lời bằng tiếng Việt. Nếu hỏi bằng tiếng Anh thì trả lời bằng tiếng Anh.
-    `;
+    challengeContext = "TagEdu Homepage. General introduction to coding adventures.";
   }
+
+  // [CỐT LÕI - SỬA LỖI NGÔN NGỮ] Sử dụng chỉ dẫn Tiếng Anh hoàn toàn để AI không bị bias tiếng Việt
+  let systemInstruction = `
+    [STRICT LANGUAGE RULE]: 
+    1. DETECT THE LANGUAGE OF THE STUDENT'S LATEST MESSAGE.
+    2. RESPOND EXCLUSIVELY IN THAT SAME LANGUAGE. 
+    3. IF THE STUDENT ASKS IN ENGLISH, YOU MUST REPLY IN ENGLISH. 
+    4. IF THE STUDENT ASKS IN VIETNAMESE, YOU MUST REPLY IN VIETNAMESE.
+    5. IGNORE THE LANGUAGE OF THE PREVIOUS CONVERSATION HISTORY IF THE CURRENT MESSAGE SWITCHES LANGUAGES.
+
+    [IDENTITY]: You are the pedagogical AI Assistant of TagEdu.
+    [CONTEXT]: ${challengeContext}
+    
+    [PEDAGOGICAL RULES]:
+    - NEVER give direct code answers or solve the task for the student.
+    - Guide the student step-by-step using questions and hints.
+    - Be friendly and encouraging.
+    - Use Markdown for formatting.
+    - In English, use "I" and "you". In Vietnamese, use "mình" and "bạn".
+
+    [CONVERSATION CONTINUITY]:
+    - You **MUST START YOUR VERY FIRST SENTENCE** with a direct greeting (e.g., "Hello!", "Chào bạn!") in your **VERY FIRST** reply of a conversation (when 'chatHistory' is empty). Do NOT skip the greeting, regardless of the language.
+    - From the **SECOND** reply onwards, it is **STRICTLY FORBIDDEN** to greet again. No "Chào bạn!", no "Hello!", no "Hi!" at the start of any follow-up messages.
+    - This rule applies even if the user switches languages mid-conversation.
+    - Instead of greeting in follow-up messages, go straight to addressing the user's question or topic naturally.
+  `;
 
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
@@ -190,53 +243,123 @@ exports.handleChat = async (req, res) => {
       parts: [{ text: row.content }],
     }));
 
+    // [MỚI] Đếm số tin nhắn User trong phiên hiện tại để xác định cấp độ gợi ý
+    const userMessageCount = historyRows.filter(r => r.sender_role === 'user').length;
+    const currentHintLevel = challengeId === 'landing' ? 'none' : determineHintLevel(userMessageCount);
+
+    // [MỚI] Nối thêm chỉ dẫn cấp độ gợi ý vào System Instruction
+    if (currentHintLevel !== 'none') {
+      const hintInstruction = getHintInstruction(currentHintLevel);
+      systemInstruction += `\n${hintInstruction}`;
+    }
+
+    // [MỚI - ONBOARDING] Truy vấn tuổi học viên để cá nhân hóa giọng điệu AI
+    const [userRows] = await db.promise().query('SELECT date_of_birth FROM users WHERE id = ?', [userId]);
+    if (userRows.length > 0 && userRows[0].date_of_birth) {
+      const dob = new Date(userRows[0].date_of_birth);
+      const age = Math.floor((new Date() - dob) / (365.25 * 24 * 60 * 60 * 1000));
+      
+      let ageTone = "";
+      if (age <= 8) {
+        ageTone = "[AGE BAND: 5-8] The student is very young. Use VERY simple words, fun emojis (🚀🌟), toy/cartoon analogies. Keep sentences short.";
+      } else if (age <= 12) {
+        ageTone = "[AGE BAND: 9-12] The student is a child. Use everyday analogies (school, games). Explain step-by-step. Be warm and patient.";
+      } else {
+        ageTone = "[AGE BAND: 13+] The student is a teenager or older. Use more technical terms when appropriate. Be concise and professional, but still encouraging.";
+      }
+      systemInstruction += `\n${ageTone}`;
+    }
+
     await db.promise().query(
       'INSERT INTO chat_messages (user_id, challenge_id, session_id, sender_role, content) VALUES (?, ?, ?, ?, ?)',
       [userId, challengeId, sessionId, 'user', message]
     );
 
-    let resultStream;
-    let successfulModel = MODEL_PRIORITY[0];
-    try {
-      const completion = await streamGeminiWithRotationAndRetry(chatHistory, systemInstruction, message, 3);
-      resultStream = completion.result;
-      successfulModel = completion.modelUsed;
-    } catch (error) {
-      console.error("❌ Lỗi khi khởi tạo stream:", error);
-      throw error;
-    }
+    // [GIẢI PHÁP TỐI THƯỢNG] Bọc trực tiếp tin nhắn bằng Lệnh Bắt Buộc Ngôn Ngữ
+    // Điều này buộc AI phải đọc lệnh này ngay sát trước khi sinh ra câu trả lời, 
+    // đánh bại hoàn toàn thói quen dùng tiếng Việt từ lịch sử chat.
+    const enforcedMessage = `[CRITICAL INSTRUCTION: Detect the language of the following text. You MUST respond in that EXACT same language. If it is English, reply in English. If it is Vietnamese, reply in Vietnamese. Ignore previous conversation languages.]\n\nText: "${message}"`;
 
+    // [CẬP NHẬT 30/04/2026] Dùng NON-STREAMING (sendMessage) làm phương thức chính
+    // Lý do: streaming (sendMessageStream) liên tục bị "Failed to parse stream" do server Google quá tải
+    // Non-streaming ổn định hơn vì không cần duy trì kết nối liên tục
     let fullAiResponse = "";
-    try {
-      for await (const chunk of resultStream.stream) {
-        try {
-          const chunkText = chunk.text();
-          fullAiResponse += chunkText; 
-          res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
-        } catch (streamErr) {
-          console.error("⚠️ Lỗi trích xuất text từ chunk stream:", streamErr);
+    
+    const keys = getApiKeys();
+    let aiCallSuccess = false;
+    const MAX_ROUNDS = 2;
+
+    for (let modelIndex = 0; modelIndex < MODEL_PRIORITY.length && !aiCallSuccess; modelIndex++) {
+      const currentModelName = MODEL_PRIORITY[modelIndex];
+
+      for (let round = 0; round < MAX_ROUNDS && !aiCallSuccess; round++) {
+        if (round > 0) {
+          console.log(`[Round ${round + 1}] 🔁 Thử lại vòng ${round + 1} cho model ${currentModelName}...`);
+        }
+
+        for (let keyAttempt = 0; keyAttempt < keys.length && !aiCallSuccess; keyAttempt++) {
+          try {
+            console.log(`[AI Call] Model: ${currentModelName} | Key: ${currentKeyIndex + 1}/${keys.length} | Round: ${round + 1}`);
+            const { chat } = getGeminiModel(chatHistory, systemInstruction, currentModelName);
+            const result = await chat.sendMessage(enforcedMessage);
+            fullAiResponse = result.response.text();
+            aiCallSuccess = true;
+            console.log(`[AI OK] ✅ Model: ${currentModelName} | Key: ${currentKeyIndex + 1}/${keys.length} | Round: ${round + 1}`);
+          } catch (error) {
+            const status = Number(error?.status);
+            console.log(`[Cảnh báo AI] Model: ${currentModelName} | Key: ${currentKeyIndex + 1}/${keys.length} | Lỗi: ${status} | Round: ${round + 1}`);
+
+            if (status === 404) {
+              console.log(`[Model Skip] ⏭️ Model ${currentModelName} không tồn tại, thử model tiếp theo...`);
+              round = MAX_ROUNDS; // Thoát luôn cả vòng round
+              break;
+            }
+
+            if (shouldRetryGeminiError(error)) {
+              currentKeyIndex = (currentKeyIndex + 1) % keys.length;
+              console.log(`[Key Rotation] 🔄 Chuyển sang Key số ${currentKeyIndex + 1}`);
+
+              if (status === 503 || status === 500 || status === 502 || status === 504) {
+                const baseDelay = round === 0 ? 3000 : 8000;
+                const maxDelay = round === 0 ? 8000 : 15000;
+                const delayMs = Math.min(baseDelay + (1000 * keyAttempt), maxDelay);
+                console.log(`[Retry] ⏳ Chờ ${Math.round(delayMs / 1000)}s trước khi thử lại...`);
+                await sleep(delayMs);
+              }
+              continue;
+            }
+
+            // Lỗi không thể retry → dừng
+            throw error;
+          }
         }
       }
-    } catch (iterError) {
-      // [FALLBACK] Nếu đang stream mà bị lỗi "Failed to parse stream", tự động chuyển sang chat thường với model đã thành công
-      if (iterError.message.includes("Failed to parse stream") || iterError.message.includes("stream")) {
-        console.log(`🔄 Hồi phục Stream lỗi, đang dùng: ${successfulModel}`);
-        const { chat } = getGeminiModel(chatHistory, systemInstruction, successfulModel);
-        const result = await chat.sendMessage(message);
-        const fallbackText = result.response.text();
-        fullAiResponse = fallbackText;
-        res.write(`data: ${JSON.stringify({ text: fallbackText })}\n\n`);
-      } else {
-        throw iterError;
+
+      if (!aiCallSuccess && modelIndex < MODEL_PRIORITY.length - 1) {
+        console.log(`[Model Fallback] 🔄 Đã thử hết cho ${currentModelName}, chuyển sang ${MODEL_PRIORITY[modelIndex + 1]}`);
       }
     }
 
-    // Luôn lưu vào DB hoàn tất TRƯỚC KHI gửi [DONE]
+    if (!aiCallSuccess) {
+      console.log(`❌ Đã thử hết tất cả models × keys, không thành công.`);
+      throw new Error('Tất cả API keys và models đều thất bại.');
+    }
+
+    // Gửi response qua SSE (giả lập streaming bằng cách chia nhỏ response)
+    const CHUNK_SIZE = 15; // Mỗi chunk ~15 ký tự để tạo hiệu ứng gõ chữ
+    for (let i = 0; i < fullAiResponse.length; i += CHUNK_SIZE) {
+      const chunk = fullAiResponse.slice(i, i + CHUNK_SIZE);
+      res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+    }
+
+    // [SỬA] Lưu vào DB kèm theo hint_level TRƯỚC KHI gửi [DONE]
     await db.promise().query(
-      'INSERT INTO chat_messages (user_id, challenge_id, session_id, sender_role, content) VALUES (?, ?, ?, ?, ?)',
-      [userId, challengeId, sessionId, 'ai', fullAiResponse]
+      'INSERT INTO chat_messages (user_id, challenge_id, session_id, sender_role, content, hint_level) VALUES (?, ?, ?, ?, ?, ?)',
+      [userId, challengeId, sessionId, 'ai', fullAiResponse, currentHintLevel]
     );
 
+    // [MỚI] Gửi hint_level qua SSE để Frontend có thể hiển thị (nếu cần)
+    res.write(`data: ${JSON.stringify({ hintLevel: currentHintLevel })}\n\n`);
     res.write('data: [DONE]\n\n');
     res.end(); 
   } catch (error) {

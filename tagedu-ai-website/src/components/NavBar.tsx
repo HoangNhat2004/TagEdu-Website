@@ -16,12 +16,17 @@ export default function NavBar() {
   const location = useLocation();
   const { t, language, setLanguage } = useI18n();
 
-  const navItems = [
-    { key: "nav.home", path: "/" },
-    { key: "nav.missionMap", path: "/missions" },
-    { key: "nav.progress", path: "/progress" },
-    { key: "nav.settings", path: "/settings" },
-  ];
+  const navItems = currentUser?.role === 'guardian' 
+    ? [
+        { key: "nav.home", path: "/" },
+        { key: "nav.settings", path: "/settings" },
+      ]
+    : [
+        { key: "nav.home", path: "/" },
+        { key: "nav.missionMap", path: "/missions" },
+        { key: "nav.progress", path: "/progress" },
+        { key: "nav.settings", path: "/settings" },
+      ];
 
   const [isChallengesVisible, setIsChallengesVisible] = useState(false);
 
@@ -180,6 +185,18 @@ export default function NavBar() {
                   <span className="hidden sm:inline flex-1 min-w-0 truncate text-sm max-w-[120px]">
                     {currentUser.fullName}
                   </span>
+                  {/* Role Badge */}
+                  {currentUser.role && (
+                    <span className={`hidden md:inline-flex text-[9px] px-1.5 py-0.5 rounded border leading-none ${
+                      currentUser.role === 'admin' ? "bg-amber-400/10 text-amber-400 border-amber-400/20" :
+                      currentUser.role === 'guardian' ? "bg-purple-400/10 text-purple-400 border-purple-400/20" :
+                      "bg-cyan-400/10 text-cyan-400 border-cyan-400/20"
+                    }`}>
+                      {currentUser.role === 'admin' ? t("nav.admin") : 
+                       currentUser.role === 'guardian' ? t("nav.guardian") : 
+                       "Learner"}
+                    </span>
+                  )}
                 </button>
 
                 {/* Admin button */}

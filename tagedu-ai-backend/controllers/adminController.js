@@ -3,10 +3,17 @@ const db = require('../config/db');
 // 1. Lấy thống kê tổng quan (Admin Dashboard Stats)
 exports.getDashboardStats = async (req, res) => {
   try {
-    const [[userCount]] = await db.promise().query("SELECT COUNT(*) as total FROM users WHERE role = 'user'");
+    const [[learnerCount]] = await db.promise().query("SELECT COUNT(*) as total FROM users WHERE role = 'learner'");
+    const [[guardianCount]] = await db.promise().query("SELECT COUNT(*) as total FROM users WHERE role = 'guardian'");
     const [[messageCount]] = await db.promise().query("SELECT COUNT(*) as total FROM chat_messages WHERE sender_role = 'user'");
-    res.json({ totalUsers: userCount.total, totalMessages: messageCount.total });
+    
+    res.json({ 
+      totalLearners: learnerCount.total, 
+      totalGuardians: guardianCount.total,
+      totalMessages: messageCount.total 
+    });
   } catch (error) {
+    console.error("❌ Lỗi dashboard stats:", error);
     res.status(500).json({ error: 'Lỗi lấy thống kê.' });
   }
 };
@@ -14,7 +21,7 @@ exports.getDashboardStats = async (req, res) => {
 // 2. Lấy danh sách toàn bộ người dùng
 exports.getAllUsers = async (req, res) => {
   try {
-    // [ĐÃ SỬA] Thêm điều kiện `m.sender_role = 'user'` vào phép JOIN để chỉ đếm tin do học viên nhắn
+    // Thêm trường guardian_name bằng cách SELF JOIN
     const query = `
       SELECT 
         u.id, 
@@ -22,12 +29,15 @@ exports.getAllUsers = async (req, res) => {
         u.email, 
         u.role, 
         u.created_at,
+        u.date_of_birth,
+        p_user.full_name as guardian_name,
         COUNT(DISTINCT m.id) as message_count,
         COUNT(DISTINCT p.challenge_id) as completed_challenges
       FROM users u
+      LEFT JOIN users p_user ON u.parent_id = p_user.id
       LEFT JOIN chat_messages m ON u.id = m.user_id AND m.sender_role = 'user'
       LEFT JOIN user_progress p ON u.id = p.user_id AND p.is_completed = 1
-      WHERE u.role = 'user'
+      WHERE u.role != 'admin'
       GROUP BY u.id
       ORDER BY u.created_at DESC
     `;
@@ -45,12 +55,14 @@ exports.getUserChatLogs = async (req, res) => {
   
   try {
     // [ĐÃ SỬA] Đọc đúng cột sender_role từ Database của bạn và đổi tên thành 'role' cho Frontend dễ nhận
+    // [MỚI] Thêm cột hint_level để hiển thị cấp độ gợi ý trên Admin Dashboard
     const query = `
       SELECT 
         id, 
         sender_role as role, 
         content, 
         feedback,
+        hint_level,
         challenge_id,
         created_at 
       FROM chat_messages 

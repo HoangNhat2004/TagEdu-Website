@@ -14,7 +14,7 @@ interface ChallengeProps {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-const getInitialCode = (t: any) => `${t("c9.code.mission")}
+const getInitialCode = (t: any) => `${t("c3.code.mission")}
 def calculateTrajectory():
     fuelLevel = 85
     destination = "Mars_Station_B"
@@ -25,14 +25,14 @@ def calculateTrajectory():
     else:
         print("Need more fuel, Explorer!")
 
-${t("c9.code.tasks")}
-${t("c9.code.task1")}
-${t("c9.code.task2")}
-${t("c9.code.task3")}
+${t("c3.code.tasks")}
+${t("c3.code.task1")}
+${t("c3.code.task2")}
+${t("c3.code.task3")}
 
 `;
 
-export default function Challenge9({ onNavigate }: ChallengeProps) {
+export default function Challenge3({ onNavigate }: ChallengeProps) {
   const { t } = useI18n();
   
   const getStorageKey = () => {
@@ -103,7 +103,7 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
         });
         if (res.ok) {
           const data = await res.json();
-          const challengeProgress = data.find((p: any) => p.challenge_id === "challenge9");
+          const challengeProgress = data.find((p: any) => p.challenge_id === "challenge3");
           
           if (challengeProgress) {
             if (challengeProgress.is_completed) {
@@ -154,7 +154,7 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ challengeId: "challenge9", draftData: code }),
+          body: JSON.stringify({ challengeId: "challenge3", draftData: code }),
         });
       } catch (error) {
         console.error("Error saving draft to cloud:", error);
@@ -216,8 +216,8 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
       : currentFuel.toString();
 
     setOutputLines([
-      "c9.term.init",
-      `c9.term.check___${fuelDisplay}`,
+      "c3.term.init",
+      `c3.term.check___${fuelDisplay}`,
       "> ..."
     ]);
 
@@ -263,7 +263,7 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ challengeId: "challenge9" }),
+            body: JSON.stringify({ challengeId: "challenge3" }),
           });
           if (res.ok) {
             // [SỬA] Không set isPracticing là false để tránh bị Reset code bởi logic đồng bộ
@@ -288,12 +288,12 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
     setIsSuccess(false);
     setVelocity(0);
     
-    setOutputLines(["c9.term.init", `c9.term.check___${fuelCapacity}`, "> ...", "c9.term.exec"]);
+    setOutputLines(["c3.term.init", `c3.term.check___${fuelCapacity}`, "> ...", "c3.term.exec"]);
 
     if (hasFuelDefined && hasValidValue && hasInvoked && hasDestination) {
       if (fuelCapacity > 50) {
         runTimeoutRef.current = setTimeout(() => {
-          setOutputLines((prev) => [...prev, "c9.term.ready", `c9.term.ignited___${fuelCapacity}`, "c9.term.success"]);
+          setOutputLines((prev) => [...prev, "c3.term.ready", `c3.term.ignited___${fuelCapacity}`, "c3.term.success"]);
           setIsSuccess(true);
           setIsRunning(false);
           runTimeoutRef.current = null;
@@ -317,7 +317,7 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
         }, 1500);
       } else {
         runTimeoutRef.current = setTimeout(() => {
-          setOutputLines((prev) => [...prev, "c9.term.needFuel", "c9.term.aborted"]);
+          setOutputLines((prev) => [...prev, "c3.term.needFuel", "c3.term.aborted"]);
           setIsRunning(false);
           runTimeoutRef.current = null;
         }, 1500);
@@ -326,10 +326,10 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
       runTimeoutRef.current = setTimeout(() => {
         setOutputLines((prev) => [
           ...prev, 
-          "c9.term.errMiss",
-          hasInvoked ? "" : "c9.term.errInvoke",
-          destination ? "" : "c9.term.errTarget",
-          hasFuelDefined ? (hasValueMatch ? (hasValidValue ? "" : "c9.term.errValue") : "c9.term.errAssign") : "c9.term.errDefine",
+          "c3.term.errMiss",
+          hasInvoked ? "" : "c3.term.errInvoke",
+          destination ? "" : "c3.term.errTarget",
+          hasFuelDefined ? (hasValueMatch ? (hasValidValue ? "" : "c3.term.errValue") : "c3.term.errAssign") : "c3.term.errDefine",
         ].filter(Boolean));
         setIsRunning(false);
         runTimeoutRef.current = null;
@@ -353,7 +353,7 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ challengeId: "challenge9" }),
+          body: JSON.stringify({ challengeId: "challenge3" }),
         });
         // [SILENT] No toast for code-only reset
       } catch (error) {
@@ -377,8 +377,8 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
     setVelocity(0);
     // Reset terminal to initial state
     setOutputLines([
-      "c9.term.init",
-      `c9.term.check___${fuelCapacity}`,
+      "c3.term.init",
+      `c3.term.check___${fuelCapacity}`,
       "> ..."
     ]);
     if (velocityIntervalRef.current) clearInterval(velocityIntervalRef.current);
@@ -402,16 +402,16 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
     <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-6 px-4 py-8 md:flex-row pb-24">
       <div className="flex w-full flex-col gap-6 md:w-[360px] shrink-0 h-full overflow-hidden">
         <div>
-          <h2 className="mb-4 text-xl font-bold tracking-wide text-primary">{t("c9.title")}</h2>
+          <h2 className="mb-4 text-xl font-bold tracking-wide text-primary">{t("c3.title")}</h2>
           <div className="rounded-lg border border-border bg-card p-5">
-            <h3 className="mb-3 text-lg font-bold text-foreground">{t("c9.briefTitle")}</h3>
-            <p className="mb-6 text-sm leading-relaxed text-muted-foreground">{t("c9.briefText")}</p>
+            <h3 className="mb-3 text-lg font-bold text-foreground">{t("c3.briefTitle")}</h3>
+            <p className="mb-6 text-sm leading-relaxed text-muted-foreground">{t("c3.briefText")}</p>
             <div className="flex flex-col gap-3 rounded-lg border border-border bg-background p-4">
               {[
-                { label: "c9.task1", checked: hasFuelDefined },
-                { label: "c9.task2", checked: hasValidValue },
-                { label: "c9.task3", checked: hasInvoked },
-                { label: "c9.task4", checked: hasDestination }
+                { label: "c3.task1", checked: hasFuelDefined },
+                { label: "c3.task2", checked: hasValidValue },
+                { label: "c3.task3", checked: hasInvoked },
+                { label: "c3.task4", checked: hasDestination }
               ].map((task, i) => (
                 <div key={i} className="flex items-center gap-3">
                   {task.checked ? <CheckCircle2 className="h-5 w-5 text-success" /> : <Circle className="h-5 w-5 text-muted-foreground" />}
@@ -440,7 +440,7 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
                 </span>
               ) : (
                 <span className="flex items-center gap-1.5 text-success/80">
-                  <Check className="h-3 w-3" /> {t("c9.synced")}
+                  <Check className="h-3 w-3" /> {t("c3.synced")}
                 </span>
               )}
             </div>
@@ -460,7 +460,7 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
         </div>
         <div className="border-t border-border bg-background/80 p-4 font-mono text-sm theme-terminal">
           <div className="mb-2 flex items-center gap-2 text-muted-foreground text-xs font-bold tracking-wider">
-            <Terminal className="h-4 w-4" /> {t("c9.term.title")}
+            <Terminal className="h-4 w-4" /> {t("c3.term.title")}
           </div>
           <div ref={terminalRef} className="flex h-32 flex-col gap-1 overflow-y-auto rounded bg-black/50 p-3 custom-scrollbar">
             {outputLines.map((l, i) => (
@@ -480,13 +480,13 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
             className={`w-full gap-2 transition-all ${isRunning ? 'opacity-70 bg-muted cursor-not-allowed text-muted-foreground' : 'bg-primary text-primary-foreground shadow-lg hover:shadow-primary/20'}`}
           >
             {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-            {isRunning ? t("c9.runCode") : t("c9.runCode")}
+            {isRunning ? t("c3.runCode") : t("c3.runCode")}
           </Button>
         </div>
 
         <div className="flex flex-1 flex-col rounded-xl border border-border bg-card p-5">
           <div className="mb-6 flex items-center justify-between">
-            <h3 className="text-sm font-bold tracking-widest text-muted-foreground">{t("c9.liveView")}</h3>
+            <h3 className="text-sm font-bold tracking-widest text-muted-foreground">{t("c3.liveView")}</h3>
             <Button variant="ghost" size="icon" onClick={handleResetSimulation} disabled={isResetting} className="text-muted-foreground hover:text-primary">
               {isResetting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             </Button>
@@ -502,14 +502,14 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
           <div className="mt-8 space-y-5">
             <div>
               <div className="mb-1 flex justify-between text-xs font-bold tracking-wider text-muted-foreground">
-                <span>{t("c9.target")}</span>
-                <span className="text-cyan-400 truncate max-w-[120px] text-right">{destDisplay || t("c9.unknown")}</span>
+                <span>{t("c3.target")}</span>
+                <span className="text-cyan-400 truncate max-w-[120px] text-right">{destDisplay || t("c3.unknown")}</span>
               </div>
               <div className="h-px w-full bg-border" />
             </div>
             <div>
               <div className="mb-2 flex justify-between text-xs font-bold tracking-wider text-muted-foreground">
-                <span>{t("c9.velocity")}</span><span>{velocity} KM/S</span>
+                <span>{t("c3.velocity")}</span><span>{velocity} KM/S</span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                 <div className="h-full bg-primary transition-all duration-1000 ease-in-out" style={{ width: `${Math.min(100, (velocity / 30000) * 100)}%` }}></div>
@@ -517,7 +517,7 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
             </div>
             <div>
               <div className="mb-2 flex justify-between text-xs font-bold tracking-wider text-muted-foreground">
-                <span>{t("c9.fuelCapacity")}</span>
+                <span>{t("c3.fuelCapacity")}</span>
                 <span className={hasValidValue ? "text-cyan-400" : "text-destructive"}>{fuelCapacity}% {!hasValidValue && "(!)"}</span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
@@ -529,7 +529,7 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
           {isSuccess && (
             <div className="mt-6 flex flex-col items-center justify-center gap-3 bg-success/5 p-4 rounded-xl border border-success/20">
               <div className="flex items-center gap-2 text-success uppercase tracking-widest text-xs font-bold">
-                <Check className="h-5 w-5" /> {t("c9.success")}
+                <Check className="h-5 w-5" /> {t("c3.success")}
               </div>
               <div className="flex w-full mt-2">
                 <Button onClick={() => onNavigate("landing")} size="sm" className="w-full">
@@ -543,3 +543,4 @@ export default function Challenge9({ onNavigate }: ChallengeProps) {
     </div>
   );
 }
+

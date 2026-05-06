@@ -7,6 +7,7 @@ const chatRoutes = require('./routes/chatRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const progressRoutes = require('./routes/progressRoutes');
 const userRoutes = require('./routes/userRoutes'); // [THÊM MỚI] Import route người dùng
+const guardianRoutes = require('./routes/guardianRoutes'); // [THÊM MỚI] Route phụ huynh
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api', chatRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', progressRoutes);
 app.use('/api/users', userRoutes); // [THÊM MỚI] Sử dụng route người dùng
+app.use('/api/guardian', guardianRoutes); // [THÊM MỚI] API cho phụ huynh
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error("🔥 Lỗi Unhandled Rejection (có thể từ luồng Stream của Gemini):", reason);

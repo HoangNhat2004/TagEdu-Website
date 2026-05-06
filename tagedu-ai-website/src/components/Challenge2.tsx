@@ -14,41 +14,41 @@ interface Question {
 
 const QUESTIONS: Question[] = [
   {
-    scenarioKey: "c8.q1",
-    correctAppNameKey: "c8.appName.Radar",
+    scenarioKey: "c2.q1",
+    correctAppNameKey: "c2.appName.Radar",
   },
   {
-    scenarioKey: "c8.q2",
-    correctAppNameKey: "c8.appName.Calculator",
+    scenarioKey: "c2.q2",
+    correctAppNameKey: "c2.appName.Calculator",
   },
   {
-    scenarioKey: "c8.q3",
-    correctAppNameKey: "c8.appName.Map",
+    scenarioKey: "c2.q3",
+    correctAppNameKey: "c2.appName.Map",
   },
   {
-    scenarioKey: "c8.q4",
-    correctAppNameKey: "c8.appName.Camera",
+    scenarioKey: "c2.q4",
+    correctAppNameKey: "c2.appName.Camera",
   },
   {
-    scenarioKey: "c8.q5",
-    correctAppNameKey: "c8.appName.Temperature",
+    scenarioKey: "c2.q5",
+    correctAppNameKey: "c2.appName.Temperature",
   },
 ];
 
 const APPS = [
-  { nameKey: "c8.appName.Radar", icon: Radar },
-  { nameKey: "c8.appName.Calculator", icon: Calculator },
-  { nameKey: "c8.appName.Map", icon: Map },
-  { nameKey: "c8.appName.Camera", icon: Camera },
-  { nameKey: "c8.appName.Security", icon: ShieldCheck },
-  { nameKey: "c8.appName.Temperature", icon: Thermometer },
+  { nameKey: "c2.appName.Radar", icon: Radar },
+  { nameKey: "c2.appName.Calculator", icon: Calculator },
+  { nameKey: "c2.appName.Map", icon: Map },
+  { nameKey: "c2.appName.Camera", icon: Camera },
+  { nameKey: "c2.appName.Security", icon: ShieldCheck },
+  { nameKey: "c2.appName.Temperature", icon: Thermometer },
 ];
 
 interface ChallengeProps {
   onNavigate: (view: any) => void;
 }
 
-const Challenge8 = ({ onNavigate }: ChallengeProps) => {
+const Challenge2 = ({ onNavigate }: ChallengeProps) => {
   const { t } = useI18n();
 
   // Hàm tạo key lưu trữ riêng theo từng User
@@ -104,7 +104,7 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
         });
         if (res.ok) {
           const data = await res.json();
-          const challengeProgress = data.find((p: any) => p.challenge_id === "challenge8");
+          const challengeProgress = data.find((p: any) => p.challenge_id === "challenge2");
           
           if (challengeProgress) {
             if (challengeProgress.is_completed) {
@@ -157,7 +157,7 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ 
-            challengeId: "challenge8", 
+            challengeId: "challenge2", 
             draftData: JSON.stringify({ currentQ, completed }) 
           }),
         });
@@ -185,7 +185,7 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ challengeId: "challenge8" }),
+            body: JSON.stringify({ challengeId: "challenge2" }),
           });
           if (res.ok) {
             // [SỬA] Không set isPracticing là false để tránh bị Reset dữ liệu bởi logic đồng bộ
@@ -239,7 +239,7 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ challengeId: "challenge8" }),
+          body: JSON.stringify({ challengeId: "challenge2" }),
         });
         
         if (res.ok) {
@@ -269,10 +269,10 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="text-xl font-bold text-foreground sm:text-2xl">
-            {t("c8.title")}
+            {t("c2.title")}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {t("c8.desc")}
+            {t("c2.desc")}
           </p>
         </div>
         {(currentQ > 0 || completed || isCloudComplete) && (
@@ -294,7 +294,7 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
       {(completed || (isCloudComplete && !isPracticing)) ? (
         <div className="flex flex-col items-center justify-center gap-6 rounded-xl border border-success bg-success/5 p-8 text-center mt-8">
           <p className="text-xl font-semibold text-success">
-            {t("c8.success") || t("c8.complete")}
+            {t("c2.success") || t("c2.complete")}
           </p>
           <div className="flex gap-4">
             <Button onClick={handleRetry} variant="outline" size="lg" disabled={isResetting}>
@@ -310,7 +310,7 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
         <>
           <div className="mb-8 rounded-xl border-2 border-primary/20 bg-primary/5 p-6">
             <p className="text-sm font-medium text-muted-foreground">
-              {t("c8.qNum")} {currentQ + 1} / {QUESTIONS.length}
+              {t("c2.qNum")} {currentQ + 1} / {QUESTIONS.length}
             </p>
             <p className="mt-2 text-lg font-semibold leading-relaxed text-foreground">
               {t(QUESTIONS[currentQ].scenarioKey)}
@@ -348,4 +348,4 @@ const Challenge8 = ({ onNavigate }: ChallengeProps) => {
   );
 };
 
-export default Challenge8;
+export default Challenge2;

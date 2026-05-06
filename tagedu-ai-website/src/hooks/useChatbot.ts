@@ -20,6 +20,7 @@ export function useChatbot(currentView: View, isOpen: boolean) {
   const { t, language } = useI18n();
   const historyLoadSeqRef = useRef(0);
   const lastFetchIdRef = useRef("");
+  const isSubmittingRef = useRef(false);
   
   const [authTrigger, setAuthTrigger] = useState(0);
 
@@ -32,9 +33,9 @@ export function useChatbot(currentView: View, isOpen: boolean) {
   useEffect(() => {
     const isGeneralView = ["landing", "progress", "settings"].includes(currentView);
     const viewMapping: Record<string, string> = {
-      "challenge1": "challenge7",
-      "challenge2": "challenge8",
-      "challenge3": "challenge9"
+      "challenge1": "challenge1",
+      "challenge2": "challenge2",
+      "challenge3": "challenge3"
     };
     const newFetchId = isGeneralView ? "landing" : (viewMapping[currentView] || currentView);
 
@@ -82,24 +83,35 @@ export function useChatbot(currentView: View, isOpen: boolean) {
   const activeUserId = getActiveUser()?.id || 1;
 
   const getWelcomeMessage = (view: View) => {
-    const userName = getActiveUser()?.fullName || "bạn";
+    const user = getActiveUser();
+    const userName = user?.fullName || "bạn";
+
+    if (user?.role === 'guardian') {
+      return t("chat.welcomeGuardian").replace("{name}", userName);
+    }
+
     if (view === "challenge1") {
-      return t("chat.welcomeChallenge7").replace("{name}", userName);
+      return t("chat.welcomeChallenge1").replace("{name}", userName);
     } else if (view === "challenge2") {
-      return t("chat.welcomeChallenge8").replace("{name}", userName);
+      return t("chat.welcomeChallenge2").replace("{name}", userName);
     } else if (view === "challenge3") {
-      return t("chat.welcomeChallenge9").replace("{name}", userName);
+      return t("chat.welcomeChallenge3").replace("{name}", userName);
     }
     return t("chat.welcomeDefault").replace("{name}", userName);
   };
 
   const getQuickReplies = (view: View) => {
+    const user = getActiveUser();
+    if (user?.role === 'guardian') {
+      return [t("chat.qr.guardian_1"), t("chat.qr.guardian_2")];
+    }
+    
     if (view === "challenge1") {
-      return [t("chat.qr.c7_1"), t("chat.qr.c7_2"), t("chat.qr.c7_3")];
+      return [t("chat.qr.c1_1"), t("chat.qr.c1_2"), t("chat.qr.c1_3")];
     } else if (view === "challenge2") {
-      return [t("chat.qr.c8_1"), t("chat.qr.c8_2"), t("chat.qr.c8_3")];
+      return [t("chat.qr.c2_1"), t("chat.qr.c2_2"), t("chat.qr.c2_3")];
     } else if (view === "challenge3") {
-      return [t("chat.qr.c9_1"), t("chat.qr.c9_2"), t("chat.qr.c9_3")];
+      return [t("chat.qr.c3_1"), t("chat.qr.c3_2"), t("chat.qr.c3_3")];
     }
     return [t("chat.qr.default1"), t("chat.qr.default2"), t("chat.qr.default3")];
   };
@@ -123,16 +135,17 @@ export function useChatbot(currentView: View, isOpen: boolean) {
       // Nhóm các màn hình ngoài sảnh (Home, Progress, Settings) về chung một phòng tên là 'landing' để kế thừa lịch sử cũ
       const isGeneralView = ["landing", "progress", "settings"].includes(currentView);
       const viewMapping: Record<string, string> = {
-        "challenge1": "challenge7",
-        "challenge2": "challenge8",
-        "challenge3": "challenge9"
+        "challenge1": "challenge1",
+        "challenge2": "challenge2",
+        "challenge3": "challenge3"
       };
       const fetchId = isGeneralView ? "landing" : (viewMapping[currentView] || currentView);
 
       setIsFetchingHistory(true);
 
       const response = await fetch(`${API_URL}/chat-history?challengeId=${fetchId}&sessionId=default_session`, {
-          headers: { ...getAuthHeader() }
+          headers: { ...getAuthHeader() },
+          cache: 'no-store'
         });
         const data = await response.json();
 
@@ -177,9 +190,9 @@ export function useChatbot(currentView: View, isOpen: boolean) {
     try {
       const isGeneralView = ["landing", "progress", "settings"].includes(currentView);
       const viewMapping: Record<string, string> = {
-        "challenge1": "challenge7",
-        "challenge2": "challenge8",
-        "challenge3": "challenge9"
+        "challenge1": "challenge1",
+        "challenge2": "challenge2",
+        "challenge3": "challenge3"
       };
       const deleteId = isGeneralView ? "landing" : (viewMapping[currentView] || currentView);
 
@@ -223,8 +236,15 @@ export function useChatbot(currentView: View, isOpen: boolean) {
   const handleSend = async (quickMessage?: string) => {
     const messageToSend = typeof quickMessage === "string" ? quickMessage : inputValue;
     if (!messageToSend.trim() || isLoading) return;
+
+    if (messageToSend.length > 2000) {
+      alert(t("chat.errorTooLong") || "Message is too long (max 2000 characters)");
+      return;
+    }
     // Invalidate pending history loads to avoid stale data overriding new messages.
     historyLoadSeqRef.current += 1;
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     
     const newUserMsg: Message = { id: "temp-" + Date.now().toString(), role: "user", content: messageToSend };
     const aiMsgId = "ai-" + Date.now().toString();
@@ -239,9 +259,9 @@ export function useChatbot(currentView: View, isOpen: boolean) {
     try {
       const isGeneralView = ["landing", "progress", "settings"].includes(currentView);
       const viewMapping: Record<string, string> = {
-        "challenge1": "challenge7",
-        "challenge2": "challenge8",
-        "challenge3": "challenge9"
+        "challenge1": "challenge1",
+        "challenge2": "challenge2",
+        "challenge3": "challenge3"
       };
       const saveId = isGeneralView ? "landing" : (viewMapping[currentView] || currentView);
 
@@ -303,7 +323,8 @@ export function useChatbot(currentView: View, isOpen: boolean) {
 
       try {
         const histRes = await fetch(`${API_URL}/chat-history?challengeId=${saveId}&sessionId=default_session`, {
-          headers: { ...getAuthHeader() }
+          headers: { ...getAuthHeader() },
+          cache: 'no-store'
         });
         if (histRes.ok) {
           const histData = await histRes.json();
@@ -321,6 +342,7 @@ export function useChatbot(currentView: View, isOpen: boolean) {
       setMessages((prev) => prev.map((msg) => msg.id === aiMsgId ? { ...msg, content: errorMsg } : msg));
     } finally {
       setIsLoading(false);
+      isSubmittingRef.current = false;
     }
   };
 
